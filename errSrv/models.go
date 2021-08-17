@@ -6,7 +6,6 @@ import (
 
 type CreateDate struct {
 	Created   int64          `json:"created"gorm:"autoCreateTime:milli"`
-	Updated   int64          `json:"updated"gorm:"autoCreateTime:milli"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -60,19 +59,32 @@ type PublicPost struct {
 	Pwd      string `json:"-"`
 	Slug     string `json:"slug"`
 	Title    string `json:"title"`
+	Updated  int64  `json:"updated"gorm:"autoCreateTime:milli"`
 	CreateDate
+}
+type EditPost struct {
+	ID      uint   `json:"id"`
+	Content string `json:"content"`
+	Res     []uint `json:"res"`
+	Pwd     string `json:"pwd"`
+	Slug    string `json:"slug"`
+	Title   string `json:"title"`
+	Status  int    `json:"status"`
+	Updated int64  `json:"updated"`
 }
 
 type DraftPost struct {
+	DraftSlug    string `json:"slug"`
 	DraftTitle   string `json:"draft_title"`
 	DraftContent string `json:"draft_content"`
-	DraftRess    []Res
+	DraftRess    []Res  `json:"-"`
+	Saved        int64  `json:"updated"gorm:"autoCreateTime:milli"`
 }
 
 type Post struct {
-	ID     uint `gorm:"primarykey" json:"-"`
+	ID     uint `gorm:"primarykey" json:"id"`
 	ResID  uint `json:"-"`
-	Status int  `json:"-"`
+	Status int  `json:"status"`
 	DraftPost
 	PublicPost
 }
@@ -88,6 +100,44 @@ func (p *Post) SetDraft(pu DraftPost) *Post {
 
 func (p *Post) GetPublic() *PublicPost {
 	return &p.PublicPost
+}
+func (p *EditPost) ToPub() *Post {
+	pp := &Post{}
+	return pp
+}
+func (p *EditPost) ToDraft() *Post {
+	pp := &Post{}
+	return pp
+}
+func (p *Post) GetEdit() *EditPost {
+	e := &EditPost{
+		ID:      p.ID,
+		Title:   p.Title,
+		Content: p.Content,
+		Pwd:     p.Pwd,
+		Res:     make([]uint, len(p.Ress)),
+		Status:  p.Status,
+		Slug:    p.Slug,
+		Updated: p.Updated,
+	}
+	if p.DraftContent != "" {
+		e.Content = p.DraftContent
+	}
+	if p.Status != 1 {
+		e.Res = make([]uint, len(p.DraftRess))
+		e.Title = p.DraftTitle
+		e.Content = p.DraftContent
+		e.Slug = p.DraftSlug
+		e.Updated = p.Saved
+		for i, r := range p.DraftRess {
+			e.Res[i] = r.ID
+		}
+	} else {
+		for i, r := range p.Ress {
+			e.Res[i] = r.ID
+		}
+	}
+	return e
 }
 func (p *Post) GetDraft() *DraftPost {
 	return &p.DraftPost

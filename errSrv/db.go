@@ -31,9 +31,9 @@ func initSys() {
 		sys.Admin = "admin"
 		sys.Pwd = "admin"
 		sys.Token = uuid.New().String()
-		sys.TotalPosts = int(countPost)
-		sys.TotalPubPosts = int(countPubPost)
 	}
+	sys.TotalPosts = int(countPost)
+	sys.TotalPubPosts = int(countPubPost)
 	db.Save(sys)
 }
 
