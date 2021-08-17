@@ -11,9 +11,11 @@ type CreateDate struct {
 }
 
 type System struct {
-	Admin string
-	Pwd   string
-	Token string
+	Admin         string
+	Pwd           string
+	Token         string
+	TotalPubPosts int
+	TotalPosts    int
 }
 
 type Res struct {
@@ -69,8 +71,8 @@ type DraftPost struct {
 
 type Post struct {
 	ID     uint `gorm:"primarykey" json:"-"`
-	ResID  uint
-	Status int
+	ResID  uint `json:"-"`
+	Status int  `json:"-"`
 	DraftPost
 	PublicPost
 }
