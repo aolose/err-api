@@ -16,6 +16,7 @@
     - [ ] create and list
     - [ ] firewall
 - [ ] resources manage    
+  - [ ] file share 
 - [ ] front-end img compress
 ###### UI  
 - [ ] front-end ui
@@ -23,17 +24,3 @@
 - [ ] move frontend to vercel 
 - [ ] move backend to vultr 
  
-
-
- ---
-
-#### What did I learn :
-```2021-8-16```
-
-The field 'Set-cookie' in response header  will affect your cookies via a fetch
-function. I thought it's only work a doc request before. That means you can 
-control your web's state via response. yes, you can't change status of your 
-page via a fetch, but cookie is working. Sometimes you may need render 
-you content base on cookies, just reload your page. If you change the session 
-in sevlte kit,the location will reload, that's why the 'Set-cookie' can make 
-you page change the content.
