@@ -25,7 +25,7 @@ func initSys() {
 	db.FirstOrCreate(sys)
 	var countPost int64
 	var countPubPost int64
-	db.Model(&Post{}).Where("status = ?", 1).Count(&countPubPost)
+	db.Model(&Post{}).Where("publish = ?", 1).Count(&countPubPost)
 	db.Model(&Post{}).Count(&countPost)
 	if sys.Admin == "" {
 		sys.Admin = "admin"

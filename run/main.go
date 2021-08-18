@@ -3,16 +3,29 @@ package main
 import (
 	"errSrv"
 	"strconv"
+	"time"
 )
 
 func main() {
 	errSrv.Connect()
 	db := errSrv.DB()
 	for i := 0; i < 60; i++ {
-		post := &errSrv.Post{}
-		post.Status = i % 3
+		post := &errSrv.Post{
+			ID: uint(i + 1),
+		}
+		n := time.Now().Unix() * 1e3
 		pf := strconv.Itoa(i)
-		if i%3 == 1 {
+		post.DraftTitle = "Draft-" + pf
+		post.Slug = "Slug-" + pf
+		post.DraftContent = "Draft ccc content -- " + pf
+		post.Created = n
+		post.DraftUpdate = n
+		post.Updated = n
+		switch i % 3 {
+		case 0:
+			post.Draft = 1
+		case 1:
+			post.Publish = 1
 			post.SetPublic(errSrv.PublicPost{
 				Title:   "title-" + pf,
 				Content: "content-" + pf,
@@ -21,18 +34,11 @@ func main() {
 					Name: "Tom",
 				},
 			})
-		} else {
-			post.DraftTitle = "Draft-" + pf
-			post.DraftContent = "Draft ccc content -- " + pf
+		case 2:
+			post.Draft = 1
+			post.Publish = 1
 		}
-		db.FirstOrCreate(post, &errSrv.Post{
-			PublicPost: errSrv.PublicPost{
-				Title: post.Title,
-			},
-			DraftPost: errSrv.DraftPost{
-				DraftTitle: post.DraftTitle,
-			},
-		})
+		db.Model(&errSrv.Post{}).FirstOrCreate(post, &errSrv.Post{ID: post.ID})
 	}
 	errSrv.Run("localhost:8880")
 }

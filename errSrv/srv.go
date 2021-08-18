@@ -54,7 +54,7 @@ func getPosst(ctx iris.Context) {
 	}
 	p := []*Post{}
 	pp := []*PublicPost{}
-	db.Offset((page-1)*count).Limit(count).Where("status = ?", 1).Find(&p)
+	db.Offset((page-1)*count).Limit(count).Where("publish = ?", 1).Find(&p)
 	for _, i := range p {
 		pp = append(pp, i.GetPublic())
 	}
@@ -99,7 +99,7 @@ func getEdits(ctx iris.Context) {
 }
 
 func getPost(ctx iris.Context) {
-	p := &Post{Status: 1}
+	p := &Post{Publish: 1}
 	tx := db.Preload("Author").First(p, "slug = ?", ctx.Params().Get("slug"))
 	if tx.Error != nil {
 		println(tx.Error)
