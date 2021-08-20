@@ -11,6 +11,7 @@ type CreateDate struct {
 }
 
 type System struct {
+	ID            uint
 	Admin         string
 	Pwd           string
 	Token         string
@@ -23,10 +24,10 @@ type Res struct {
 	Type   string
 	Name   string
 	Remark string
-	Path   string
+	Pwd    string
 	Size   int64
-	PostID uint
-	Posts  []Post
+	ArtID  uint
+	Arts   []Art
 }
 
 type Guest struct {
@@ -45,194 +46,118 @@ type Comment struct {
 	CreateDate
 	Avatar  int    `json:"avatar"`
 	Name    string `json:"name"`
-	PostID  uint   `json:"-"`
+	ArtID   uint   `json:"-"`
 	reply   uint   `json:"reply"`
 	Content string `json:"content"`
 	Link    string `json:"link"`
 }
 
-type PublicPost struct {
-	Content  string `json:"content"`
-	AuthorID uint   `json:"-"`
-	Author   Author `json:"author"`
-	Ress     []Res  `json:"-"`
-	CanCom   int    `json:"comm"`
-	Pwd      string `json:"-"`
-	Slug     string `json:"slug"`
-	Title    string `json:"title"`
-	Updated  int64  `json:"updated"`
-	Created  int64  `json:"created"`
-	Banner   string `json:"banner"`
-	Desc     string `json:"desc"`
-	Tags     []Tag  `json:"tags"`
-	TagID    uint   `json:"-"`
-}
-type EditPost struct {
-	ID        uint   `json:"id"`
-	Content   string `json:"content"`
-	Res       []Res  `json:"res"`
-	Pwd       string `json:"pwd"`
-	Slug      string `json:"slug"`
-	Title     string `json:"title"`
-	Updated   int64  `json:"updated"`
-	Updated2  int64  `json:"update2"`
-	Create2   int64  `json:"create2"`
-	CanCom    int    `json:"comm"`
-	Published int    `json:"publish"`
-	Draft     int    `json:"draft"`
-	Banner    string `json:"banner"`
-	Desc      string `json:"desc"`
-	Tags      []Tag  `json:"tags"`
-}
-
-type DraftPost struct {
-	DraftTitle   string `json:"draft_title"`
-	DraftContent string `json:"draft_content"`
-	DraftRess    []Res  `json:"-"`
-	DraftUpdate  int64  `json:"updated"`
+type PubArt struct {
+	AuthorID     uint   `json:"-"`
+	Author       Author `json:"author"`
+	Ress         []Res  `json:"-"`
+	AllowComment int    `json:"comm"`
+	Pwd          string `json:"-"`
+	Slug         string `json:"slug"`
+	Title        string `json:"title"`
+	Updated      int64  `json:"updated"`
+	Created      int64  `json:"created"`
+	Banner       string `json:"banner"`
+	Desc         string `json:"desc"`
+	Tags         []Tag  `json:"tags"`
+	TagID        uint   `json:"-"`
 }
 
 type Tag struct {
-	ID     uint   `gorm:"primarykey" json:"id"`
-	PostID uint   `json:"-"`
-	Posts  []Post `json:"-"`
+	ID    uint  `gorm:"primarykey" json:"id"`
+	ArtID uint  `json:"-"`
+	Arts  []Art `json:"-"`
 }
 
-type Post struct {
+type ArtHis struct {
+	AID     uint  ` gorm:"index" json:"id"`
+	Version int64 `gorm:"index" json:"ver"`
+	Content string
+	Title   string
+}
+
+type Art struct {
 	ID             uint           `gorm:"primarykey" json:"id"`
-	OverrideUpdate int64          `json:"-"`
-	OverrideCreate int64          `json:"-"`
+	OverrideUpdate int64          `json:"update2"`
+	OverrideCreate int64          `json:"create2"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
-	Publish        int            `json:"publish"`
-	Draft          int            `json:"draft"`
 	ResID          uint           `json:"-"`
-	DraftPost
-	PublicPost
+	Version        int64          `json:"ver"`
+	Content        string         `json:"content"`
+	SaveAt         int64          `json:"saved"`
+	PubArt
 }
 
-func (p *Post) SetPublic(pu PublicPost) *Post {
-	p.PublicPost = pu
-	return p
-}
-func (p *Post) SetDraft(pu DraftPost) *Post {
-	p.DraftPost = pu
+func (p *Art) SetPublic(pu PubArt) *Art {
+	p.PubArt = pu
 	return p
 }
 
-func (p *Post) GetPublic() *PublicPost {
-	return &p.PublicPost
+func (p *Art) GetPublic() *PubArt {
+	return &p.PubArt
 }
-func (p *Post) Save() error {
-	n := time.Now().Unix() * 1e3
-	if p.Created == 0 {
-		p.Created = n
+
+func save(p *Art) error {
+	n := time.Now().Unix()
+	p.SaveAt = n
+	if p.OverrideUpdate != 0 {
+		p.Updated = p.Updated
 	}
-	if p.Publish == 1 {
-		if p.OverrideUpdate != 0 {
-			p.Updated = p.OverrideUpdate
-		} else if p.Updated == 0 {
-			p.Updated = n
+	if p.ID == 0 {
+		if p.Created == 0 {
+			p.Created = n
 		}
-	} else {
-		if p.OverrideUpdate != 0 {
-			p.DraftUpdate = p.OverrideUpdate
-		} else if p.DraftUpdate == 0 {
-			p.DraftUpdate = n
+		if p.OverrideCreate != 0 {
+			p.Created = p.OverrideCreate
 		}
-	}
-	if p.OverrideCreate != 0 {
-		p.Created = p.OverrideCreate
-	}
-	if p.ID != 0 {
 		return db.Create(p).Error
 	} else {
-		return db.Save(p).Error
+		if p.OverrideCreate != 0 {
+			p.Created = p.OverrideCreate
+		}
+		return db.Model(p).Updates(p).Error
 	}
 }
 
-func (p *EditPost) GetPost() *Post {
-	pp := &Post{}
-	if p.ID != 0 {
-		db.First(pp, p.ID)
-	}
-	return pp
+func (p *Art) Save() error {
+	err := save(p)
+	return err
 }
 
-func ToPub(pp *Post, p *EditPost) {
-	pp.Publish = 1
-	pp.Draft = 0
-	pp.Content = p.Content
-	pp.Title = p.Title
-	pp.Ress = p.Res
-	pp.DraftPost = DraftPost{}
-}
-func ToDraft(pp *Post, p *EditPost) {
-	pp.OverrideUpdate = p.Updated2
-	pp.OverrideCreate = p.Create2
-	pp.DraftContent = p.Content
-	pp.DraftTitle = p.Title
-	pp.DraftRess = p.Res
-
-	pp.Banner = p.Banner
-	pp.Desc = p.Desc
-	pp.Pwd = p.Pwd
-	pp.Slug = p.Slug
-	pp.CanCom = p.CanCom
-	pp.Tags = p.Tags
-}
-
-func (p *EditPost) Publish() error {
-	pp := p.GetPost()
-	ToDraft(pp, p)
-	ToPub(pp, p)
-	return pp.Save()
-}
-func (p *EditPost) Save() error {
-	pp := p.GetPost()
-	ToDraft(pp, p)
-	return pp.Save()
-}
-func (p *EditPost) Unpublish() error {
-	if p.ID == 0 {
-		return nil
+func (p *Art) Publish() error {
+	n := time.Now().Unix()
+	p.Updated = n
+	err := save(p)
+	if err == nil {
+		if p.Version == -1 {
+			p.Version = n
+			err = db.Model(p).Update("version", n).Error
+		}
+		if err == nil {
+			err = db.Where(ArtHis{
+				AID:     p.ID,
+				Version: p.Version,
+			}).Assign(ArtHis{
+				Content: p.Content,
+				Title:   p.Title,
+			}).FirstOrCreate(&ArtHis{}).Error
+		}
 	}
-	pp := p.GetPost()
-	pp.Draft = 1
-	pp.Publish = 0
-	pp.PublicPost = PublicPost{}
-	return pp.Save()
-}
-
-func (p *Post) GetEdit() *EditPost {
-	e := &EditPost{
-		ID:        p.ID,
-		Title:     p.Title,
-		Content:   p.Content,
-		Pwd:       p.Pwd,
-		Slug:      p.Slug,
-		Updated:   p.Updated,
-		Res:       p.Ress,
-		CanCom:    p.CanCom,
-		Banner:    p.Banner,
-		Desc:      p.Desc,
-		Published: p.Publish,
-		Draft:     p.Draft,
-		Tags:      p.Tags,
-	}
-	if p.Draft == 1 {
-		e.Title = p.DraftTitle
-		e.Content = p.DraftContent
-		e.Updated = p.DraftUpdate
-		e.Res = p.DraftRess
-	}
-	return e
-}
-func (p *Post) GetDraft() *DraftPost {
-	return &p.DraftPost
+	return err
 }
 
 func dbInit() {
-	db.AutoMigrate(&Post{})
+	db.AutoMigrate(&System{})
+	db.AutoMigrate(&Art{})
+	db.AutoMigrate(&ArtHis{})
+	db.AutoMigrate(&Tag{})
+	db.AutoMigrate(&Res{})
+	db.AutoMigrate(&Author{})
 	db.AutoMigrate(&Comment{})
 	db.AutoMigrate(&Guest{})
 }

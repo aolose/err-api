@@ -1,39 +1,161 @@
 package errSrv
 
-import "github.com/kataras/iris/v12"
+import (
+	"fmt"
+	"github.com/kataras/iris/v12"
+	"strconv"
+	"strings"
+	"time"
+)
 
 func Run(addr string) {
 	app := iris.New()
-	app.UseGlobal(func(ctx iris.Context) {
+	app.UseRouter(func(ctx iris.Context) {
+		r := ctx.Request()
+		fmt.Printf("%v \t %v\n", r.Method, r.URL)
 		ctx.Header("Access-Control-Allow-Origin", "*")
-		ctx.Header("Access-Control-Max-Age", "3600")
-		ctx.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-		if ctx.Method() == "OPTION" {
+		ctx.Header("Access-Control-Allow-Credentials", "true")
+		if ctx.Method() == iris.MethodOptions {
+			ctx.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS")
+			ctx.Header("Access-Control-Max-Age", "86400")
 			ctx.StatusCode(204)
 		} else {
 			ctx.Next()
 		}
 	})
-	app.Get("/edits/{page}", auth(getEdits))
+	app.OnAnyErrorCode(func(ctx iris.Context) {
+		r := ctx.Request()
+		fmt.Printf("Error %v \t %v %v\n", r.Method, r.URL, ctx.GetErr())
+		ctx.Next()
+	})
+	app.Get("/msg", func(ctx iris.Context) {
+		flusher, ok := ctx.ResponseWriter().Flusher()
+		if !ok {
+			return
+		}
+		ctx.ContentType("text/event-stream")
+		ctx.Header("Cache-Control", "no-cache")
+		now := time.Now()
+		ctx.Writef("data: The server time is: %s\n\n", now)
+		flusher.Flush()
+	})
 	post := app.Party("/post")
 	post.Get("/{slug}", getPost)
-	post.Post("/", setPost)
+	post.Get("/ctx", auth(getCtx))
 	posts := app.Party("/posts")
-
 	posts.Get("/{page}", getPosst)
+
+	his := app.Party("/his")
+	his.Get("/{id}/{ver}", func(ctx iris.Context) {})
+	his.Delete("/{id}/{ver}", func(ctx iris.Context) {})
+
+	edit := app.Party("/edit")
+	edit.Get("/{page}", auth(getEdits))
+	// save
+	edit.Put("/", func(ctx iris.Context) {
+		p := &Art{}
+		ctx.ReadJSON(p)
+		err := p.Save()
+		if err != nil {
+			handleErr(ctx, err)
+		} else {
+			ctx.WriteString(strings.Join([]string{
+				strconv.Itoa(int(p.ID)),
+				strconv.Itoa(int(p.Version)),
+				strconv.Itoa(int(p.SaveAt)),
+			}, ":"))
+		}
+	})
+	//publish
+	edit.Post("/", func(ctx iris.Context) {
+		p := &Art{}
+		ctx.ReadJSON(p)
+		err := p.Publish()
+		if err != nil {
+			handleErr(ctx, err)
+		} else {
+			ctx.WriteString(strings.Join([]string{
+				strconv.Itoa(int(p.ID)),
+				strconv.Itoa(int(p.Version)),
+				strconv.Itoa(int(p.Updated)),
+			}, ":"))
+		}
+	})
+	// unpublish
+	edit.Patch("/{id}/{ver}", func(ctx iris.Context) {
+		pa := ctx.Params()
+		ver := -1
+		id, err := pa.GetUint("id")
+		if err == nil {
+			ver, err = pa.GetInt("ver")
+		}
+		p := &Art{
+			ID: id,
+		}
+		if err == nil {
+			err = db.Model(p).Update("version", ver).Error
+		}
+		if err != nil {
+			handleErr(ctx, err)
+		} else {
+			ctx.StatusCode(200)
+		}
+	})
+	// del
+	edit.Delete("/{id}", func(ctx iris.Context) {
+		id, err := ctx.Params().GetUint("id")
+		if err == nil {
+			err = db.Delete(&Art{ID: id}).Error
+			if err == nil {
+				err = db.Where("a_id = ?", id).Delete(&ArtHis{}).Error
+			}
+		}
+		if err == nil {
+			ctx.WriteString(strconv.Itoa(int(id)))
+		} else {
+			handleErr(ctx, err)
+		}
+	})
+
 	_ = app.Listen(addr)
 }
 
+func handleErr(ctx iris.Context, err error) {
+	fmt.Errorf("%v", err)
+	ctx.StatusCode(500)
+	ctx.JSON(err)
+}
+
+func getCtx(ctx iris.Context) {
+	id, err := ctx.URLParamInt("id")
+	ver := ctx.URLParamInt64Default("ver", -1)
+	if err == nil {
+		c := &ArtHis{}
+		err = db.Take(c, ArtHis{
+			AID:     uint(id),
+			Version: ver,
+		}).Error
+		if err == nil {
+			ctx.JSON(iris.Map{
+				"c": c.Content,
+			})
+		}
+	}
+	if err != nil {
+		handleErr(ctx, err)
+	}
+}
+
 type ListPubPost struct {
-	Posts []*PublicPost `json:"ls"`
-	Total int           `json:"total"`
-	Cur   int           `json:"cur"`
+	Posts []*PubArt `json:"ls"`
+	Total int       `json:"total"`
+	Cur   int       `json:"cur"`
 }
 
 type ListPost struct {
-	Posts []*EditPost `json:"ls"`
-	Total int         `json:"total"`
-	Cur   int         `json:"cur"`
+	Posts []*Art `json:"ls"`
+	Total int    `json:"total"`
+	Cur   int    `json:"cur"`
 }
 
 func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
@@ -52,8 +174,8 @@ func getPosst(ctx iris.Context) {
 	if count == 0 {
 		count = 5
 	}
-	p := []*Post{}
-	pp := []*PublicPost{}
+	p := []*Art{}
+	pp := []*PubArt{}
 	db.Offset((page-1)*count).Limit(count).Where("publish = ?", 1).Find(&p)
 	for _, i := range p {
 		pp = append(pp, i.GetPublic())
@@ -65,6 +187,7 @@ func getPosst(ctx iris.Context) {
 	}
 	ctx.JSON(ls)
 }
+
 func getEdits(ctx iris.Context) {
 	page := ctx.Params().GetIntDefault("page", 1)
 	count := ctx.URLParamIntDefault("count", 20)
@@ -75,7 +198,7 @@ func getEdits(ctx iris.Context) {
 	if count == 0 {
 		count = 20
 	}
-	p := []*Post{}
+	p := []*Art{}
 	var c int64
 	t := sys.TotalPosts
 	tx := db.Offset((page - 1) * count).Limit(count)
@@ -86,12 +209,8 @@ func getEdits(ctx iris.Context) {
 		t = int(c)
 	}
 	tx.Order("updated desc, created desc").Find(&p)
-	pp := make([]*EditPost, len(p))
-	for i, v := range p {
-		pp[i] = v.GetEdit()
-	}
 	ls := &ListPost{
-		Posts: pp,
+		Posts: p,
 		Total: (t + count - 1) / count,
 		Cur:   page,
 	}
@@ -99,7 +218,7 @@ func getEdits(ctx iris.Context) {
 }
 
 func getPost(ctx iris.Context) {
-	p := &Post{Publish: 1}
+	p := &Art{}
 	tx := db.Preload("Author").First(p, "slug = ?", ctx.Params().Get("slug"))
 	if tx.Error != nil {
 		println(tx.Error)

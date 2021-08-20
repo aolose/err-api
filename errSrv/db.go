@@ -5,10 +5,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"log"
-	"os"
-	"time"
 )
 
 const dbName = "errDB.db"
@@ -25,8 +22,8 @@ func initSys() {
 	db.FirstOrCreate(sys)
 	var countPost int64
 	var countPubPost int64
-	db.Model(&Post{}).Where("publish = ?", 1).Count(&countPubPost)
-	db.Model(&Post{}).Count(&countPost)
+	db.Model(&Art{}).Where("version > ?", 0).Count(&countPubPost)
+	db.Model(&Art{}).Count(&countPost)
 	if sys.Admin == "" {
 		sys.Admin = "admin"
 		sys.Pwd = "admin"
@@ -39,16 +36,7 @@ func initSys() {
 
 func Connect() {
 	var err error
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags),
-		logger.Config{
-			SlowThreshold:             10 * time.Millisecond,
-			LogLevel:                  logger.Info,
-			IgnoreRecordNotFoundError: true,
-			Colorful:                  true,
-		},
-	)
-	db, err = gorm.Open(sqlite.Open(dbName), &gorm.Config{Logger: newLogger})
+	db, err = gorm.Open(sqlite.Open(dbName), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Open: ", err)
 	}
