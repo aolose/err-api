@@ -6,6 +6,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"log"
+	"time"
 )
 
 const dbName = "errDB.db"
@@ -20,6 +21,20 @@ func DB() *gorm.DB {
 func initSys() {
 	sys = &System{}
 	db.FirstOrCreate(sys)
+	syncSys()
+}
+
+var nextSyncSys time.Time
+
+func nextSysSync(v time.Duration) {
+	n := time.Now()
+	t := n.Add(v)
+	if nextSyncSys.After(t) && n.Before(t) {
+		nextSyncSys = t
+	}
+}
+
+func syncSys() {
 	var countPost int64
 	var countPubPost int64
 	db.Model(&Art{}).Where("version > ?", 0).Count(&countPubPost)

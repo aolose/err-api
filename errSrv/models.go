@@ -82,14 +82,13 @@ type ArtHis struct {
 }
 
 type Art struct {
-	ID             uint           `gorm:"primarykey" json:"id"`
-	OverrideUpdate int64          `json:"update2"`
-	OverrideCreate int64          `json:"create2"`
-	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
-	ResID          uint           `json:"-"`
-	Version        int64          `json:"ver"`
-	Content        string         `json:"content"`
-	SaveAt         int64          `json:"saved"`
+	ID             uint   `gorm:"primarykey" json:"id"`
+	OverrideUpdate int64  `json:"update2"`
+	OverrideCreate int64  `json:"create2"`
+	ResID          uint   `json:"-"`
+	Version        int64  `json:"ver"`
+	Content        string `json:"content"`
+	SaveAt         int64  `json:"saved"`
 	PubArt
 }
 

@@ -9,6 +9,16 @@ import (
 )
 
 func Run(addr string) {
+	go func() {
+		for {
+			time.Sleep(time.Second * 2)
+			n := time.Now()
+			if nextSyncSys.Before(n) {
+				syncSys()
+				nextSyncSys = nextSyncSys.Add(time.Second * 180)
+			}
+		}
+	}()
 	app := iris.New()
 	app.UseRouter(func(ctx iris.Context) {
 		r := ctx.Request()
@@ -70,10 +80,14 @@ func Run(addr string) {
 	edit.Post("/", func(ctx iris.Context) {
 		p := &Art{}
 		ctx.ReadJSON(p)
+		v := p.Version
 		err := p.Publish()
 		if err != nil {
 			handleErr(ctx, err)
 		} else {
+			if v == -1 {
+				nextSysSync(time.Second * 2)
+			}
 			ctx.WriteString(strings.Join([]string{
 				strconv.Itoa(int(p.ID)),
 				strconv.Itoa(int(p.Version)),
@@ -98,6 +112,9 @@ func Run(addr string) {
 		if err != nil {
 			handleErr(ctx, err)
 		} else {
+			if ver == -1 {
+				nextSysSync(time.Second * 2)
+			}
 			ctx.StatusCode(200)
 		}
 	})
@@ -113,6 +130,7 @@ func Run(addr string) {
 		if err == nil {
 			ctx.WriteString(strconv.Itoa(int(id)))
 		} else {
+			nextSysSync(time.Second * 2)
 			handleErr(ctx, err)
 		}
 	})
@@ -176,7 +194,9 @@ func getPosst(ctx iris.Context) {
 	}
 	p := []*Art{}
 	pp := []*PubArt{}
-	db.Offset((page-1)*count).Limit(count).Where("publish = ?", 1).Find(&p)
+	db.Select("art_his.title as title, art_his.content as content").
+		Joins("left join art_his on arts.id = art_his.a_id and arts.version = art_his.version").
+		Offset((page-1)*count).Limit(count).Where("arts.version != ?", -1).Find(&p)
 	for _, i := range p {
 		pp = append(pp, i.GetPublic())
 	}
@@ -208,7 +228,7 @@ func getEdits(ctx iris.Context) {
 		db.Table("post").Where("title Like ? OR content Like ?", v, v).Count(&c)
 		t = int(c)
 	}
-	tx.Order("updated desc, created desc").Find(&p)
+	tx.Order("updated desc, save_at desc").Find(&p)
 	ls := &ListPost{
 		Posts: p,
 		Total: (t + count - 1) / count,
