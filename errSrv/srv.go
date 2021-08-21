@@ -11,11 +11,11 @@ import (
 func Run(addr string) {
 	go func() {
 		for {
-			time.Sleep(time.Second * 2)
+			time.Sleep(time.Second * 5)
 			n := time.Now()
 			if nextSyncSys.Before(n) {
 				syncSys()
-				nextSyncSys = nextSyncSys.Add(time.Second * 180)
+				nextSyncSys = nextSyncSys.Add(time.Hour * 999)
 			}
 		}
 	}()

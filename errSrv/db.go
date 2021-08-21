@@ -29,7 +29,7 @@ var nextSyncSys time.Time
 func nextSysSync(v time.Duration) {
 	n := time.Now()
 	t := n.Add(v)
-	if nextSyncSys.After(t) && n.Before(t) {
+	if nextSyncSys.Before(n) || (nextSyncSys.After(t) && n.Before(t)) {
 		nextSyncSys = t
 	}
 }
