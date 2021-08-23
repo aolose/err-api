@@ -26,6 +26,22 @@ func initSys() {
 
 var nextSyncSys time.Time
 
+func slugCount(str string, id uint) int64 {
+	var c int64
+	cd := "id !=? and slug like ?"
+	db.Model(&Art{}).Where(cd, id, str).Count(&c)
+	if c > 0 {
+		var b int64
+		db.Model(&Art{}).Where(cd, id, str+"_").Count(&b)
+		c += b
+		if c > 9 {
+			db.Model(&Art{}).Where(cd, id, str+"__").Count(&b)
+			c += b
+		}
+	}
+	return c
+}
+
 func nextSysSync(v time.Duration) {
 	n := time.Now()
 	t := n.Add(v)

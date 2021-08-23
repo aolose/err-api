@@ -73,7 +73,7 @@ func Run(addr string) {
 				strconv.Itoa(int(p.ID)),
 				strconv.Itoa(int(p.Version)),
 				strconv.Itoa(int(p.SaveAt)),
-			}, ":"))
+			}, "\u0001"))
 		}
 	})
 	//publish
@@ -90,9 +90,10 @@ func Run(addr string) {
 			}
 			ctx.WriteString(strings.Join([]string{
 				strconv.Itoa(int(p.ID)),
+				p.Slug,
 				strconv.Itoa(int(p.Version)),
 				strconv.Itoa(int(p.Updated)),
-			}, ":"))
+			}, "\u0001"))
 		}
 	})
 	// unpublish
@@ -165,9 +166,9 @@ func getCtx(ctx iris.Context) {
 }
 
 type ListPubPost struct {
-	Posts []*PubArt `json:"ls"`
-	Total int       `json:"total"`
-	Cur   int       `json:"cur"`
+	Posts []*PubLisArt `json:"ls"`
+	Total int          `json:"total"`
+	Cur   int          `json:"cur"`
 }
 
 type ListPost struct {
@@ -192,16 +193,12 @@ func getPosst(ctx iris.Context) {
 	if count == 0 {
 		count = 5
 	}
-	p := []*Art{}
-	pp := []*PubArt{}
-	db.Select("art_his.title as title, art_his.content as content").
+	p := []*PubLisArt{}
+	db.Model(&Art{}).Select("art_his.title as title, art_his.content as content, arts.slug as slug").
 		Joins("left join art_his on arts.id = art_his.a_id and arts.version = art_his.version").
-		Offset((page-1)*count).Limit(count).Where("arts.version != ?", -1).Find(&p)
-	for _, i := range p {
-		pp = append(pp, i.GetPublic())
-	}
+		Offset((page-1)*count).Limit(count).Where("arts.version != ?", -1).Take(&p)
 	ls := &ListPubPost{
-		Posts: pp,
+		Posts: p,
 		Total: (sys.TotalPubPosts + count - 1) / count,
 		Cur:   page,
 	}
@@ -239,11 +236,20 @@ func getEdits(ctx iris.Context) {
 
 func getPost(ctx iris.Context) {
 	p := &Art{}
-	tx := db.Preload("Author").First(p, "slug = ?", ctx.Params().Get("slug"))
-	if tx.Error != nil {
-		println(tx.Error)
+	h := &ArtHis{}
+	err := db.Preload("Author").First(p, "slug = ?", ctx.Params().Get("slug")).Error
+	if err == nil {
+		err = db.Where("a_id = ? and version = ?", p.ID, p.Version).First(h).Error
 	}
-	ctx.JSON(p.GetPublic())
+	if err == nil {
+		pp := p.PubArt
+		pp.Content = h.Content
+		pp.Title = h.Title
+		ctx.JSON(pp)
+	} else {
+		handleErr(ctx, err)
+	}
+
 }
 
 func setPost(ctx iris.Context) {
