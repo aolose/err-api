@@ -55,6 +55,30 @@ func Run(addr string) {
 	posts := app.Party("/posts")
 	posts.Get("/{page}", getPosst)
 
+	tag := app.Party("/tag")
+	tag.Get("/ls", func(ctx iris.Context) {
+		tg := make([]string, len(tagsCache))
+		i := 0
+		for k, _ := range tagsCache {
+			tg[i] = k
+			i++
+		}
+		ctx.StatusCode(200)
+		ctx.JSON(tg)
+	})
+	tag.Get("/all", func(ctx iris.Context) {
+		var gs []Tag
+		err := db.Find(gs).Error
+		if err == nil {
+			ctx.StatusCode(200)
+			ctx.JSON(gs)
+		} else {
+			handleErr(ctx, err)
+		}
+	})
+	tag.Get("/{name}/{page}", func(ctx iris.Context) {
+
+	})
 	his := app.Party("/his")
 	his.Get("/{id}/{ver}", func(ctx iris.Context) {})
 	his.Delete("/{id}/{ver}", func(ctx iris.Context) {})
@@ -93,6 +117,8 @@ func Run(addr string) {
 				p.Slug,
 				strconv.Itoa(int(p.Version)),
 				strconv.Itoa(int(p.Updated)),
+				nTags,
+				dTags,
 			}, "\u0001"))
 		}
 	})
@@ -122,6 +148,13 @@ func Run(addr string) {
 	// del
 	edit.Delete("/{id}", func(ctx iris.Context) {
 		id, err := ctx.Params().GetUint("id")
+		if err == nil {
+			a := &Art{ID: id}
+			err = db.Find(a).Error
+			if err == nil {
+				err = delTags(id, strings.Split(a.Tags, " ")...)
+			}
+		}
 		if err == nil {
 			err = db.Delete(&Art{ID: id}).Error
 			if err == nil {

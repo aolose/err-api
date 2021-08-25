@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -11,6 +12,8 @@ type CreateDate struct {
 	Created   int64          `json:"created"gorm:"autoCreateTime:milli"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
+
+var tagsCache map[string][]uint
 
 type System struct {
 	ID            uint
@@ -70,15 +73,19 @@ type PubArt struct {
 	Pwd          string `json:"-"`
 	Updated      int64  `json:"updated"`
 	Created      int64  `json:"created"`
-	Tags         []Tag  `json:"tags"`
-	TagID        uint   `json:"-"`
+	Tags         string `json:"tagsCache"`
 	PubLisArt
 }
 
 type Tag struct {
-	ID    uint  `gorm:"primarykey" json:"id"`
-	ArtID uint  `json:"-"`
-	Arts  []Art `json:"-"`
+	Name string `gorm:"primarykey" json:"name"`
+	Pic  string `json:"pic"`
+	Desc string `json:"desc"`
+}
+
+type TagArt struct {
+	Name string `gorm:"index" json:"name"`
+	AID  uint   `gorm:"index" json:"aid"`
 }
 
 type ArtHis struct {
@@ -130,7 +137,59 @@ func (p *Art) Save() error {
 	return err
 }
 
+var nTags string
+var dTags string
+
 func (p *Art) Publish() error {
+	var err error
+	if p.ID != 0 {
+		c := &Art{ID: p.ID}
+		err = db.Find(c).Error
+		if err != nil {
+			return err
+		}
+		if c.Tags != p.Tags {
+			a := strings.Split(c.Tags, " ")
+			b := strings.Split(p.Tags, " ")
+			la := len(a)
+			lb := 0
+			m := make(map[string]int)
+			for _, k := range a {
+				m[k] = m[k] - 1
+			}
+			for _, k := range b {
+				if m[k] == -1 {
+					la--
+				} else {
+					lb++
+				}
+				m[k] = m[k] + 1
+			}
+			od := make([]string, la)
+			ne := make([]string, lb)
+			la = 0
+			lb = 0
+			for k, v := range m {
+				if v == -1 {
+					od[la] = k
+					la++
+				}
+				if v == 1 {
+					ne[lb] = k
+					lb++
+				}
+			}
+			err = delTags(p.ID, od...)
+			if err == nil {
+				err = addTags(p.ID, ne...)
+			}
+			dTags = strings.Join(od, " ")
+			nTags = strings.Join(ne, " ")
+		}
+	}
+	if err != nil {
+		return err
+	}
 	n := time.Now().Unix()
 	p.Updated = n
 	if p.OverrideUpdate != 0 {
@@ -139,7 +198,7 @@ func (p *Art) Publish() error {
 	if p.OverrideSlug != "" {
 		p.Slug = p.OverrideSlug
 	} else {
-		p.Slug = trans(p.Title)
+		p.Slug = slug(p.Title)
 	}
 	c := slugCount(p.Slug, 0)
 	if c > 0 {
@@ -150,7 +209,7 @@ func (p *Art) Publish() error {
 	if c > 0 {
 		p.Slug += strconv.Itoa(int(c))
 	}
-	err := save(p)
+	err = save(p)
 	if err == nil {
 		if p.Version == -1 {
 			p.Version = n
@@ -169,13 +228,98 @@ func (p *Art) Publish() error {
 	return err
 }
 
+func hasTag(id uint, name string) (bool, []uint) {
+	v, ok := tagsCache[name]
+	if !ok {
+		v = make([]uint, 0)
+	}
+	for _, i := range v {
+		if i == id {
+			return true, v
+		}
+	}
+	return false, v
+}
+
+func addTags(id uint, name ...string) error {
+	var ts []Tag
+	ta := make([]TagArt, 0)
+	err := db.Where("name not in ?", name).Find(ts).Error
+	if err == nil {
+		l := len(ts)
+		for i := 0; err == nil && i < l; i++ {
+			t := ts[i]
+			err = db.Create(&TagArt{AID: id, Name: t.Name}).Error
+			v := make([]uint, 1)
+			v[0] = id
+			tagsCache[t.Name] = v
+		}
+	}
+	if err == nil {
+	loop:
+		for _, t := range name {
+			for _, n := range ts {
+				if n.Name == t {
+					continue loop
+				}
+			}
+			ta = append(ta, TagArt{Name: t, AID: id})
+			tagsCache[t] = append(tagsCache[t], id)
+		}
+		err = db.Create(ta).Error
+	}
+	return err
+}
+
+func delTags(id uint, name ...string) error {
+	ns := make([]string, 0)
+	ts := make([]string, 0)
+	for _, t := range name {
+		ok, v := hasTag(id, t)
+		if ok {
+			ts = append(ts, t)
+			if len(v) < 2 {
+				delete(tagsCache, t)
+				ns = append(ns, t)
+			} else {
+				vv := make([]uint, len(v)-1)
+				n := 0
+				for _, x := range v {
+					if x != id {
+						vv[n] = x
+						n++
+					}
+				}
+				tagsCache[t] = vv
+			}
+		}
+	}
+	err := db.Where("name in =?", ns).Delete(&Tag{}).Error
+	if err == nil {
+		err = db.Where("a_id = ? and name in ?", id, ts).Delete(&TagArt{}).Error
+	}
+	return err
+}
+
 func dbInit() {
 	db.AutoMigrate(&System{})
 	db.AutoMigrate(&Art{})
 	db.AutoMigrate(&ArtHis{})
 	db.AutoMigrate(&Tag{})
+	db.AutoMigrate(&TagArt{})
 	db.AutoMigrate(&Res{})
 	db.AutoMigrate(&Author{})
 	db.AutoMigrate(&Comment{})
 	db.AutoMigrate(&Guest{})
+	var tas []*TagArt
+	db.Table("tag_art").Find(tas)
+loop:
+	for _, t := range tas {
+		ok, v := hasTag(t.AID, t.Name)
+		if ok {
+			continue loop
+		}
+		v = append(v, t.AID)
+		tagsCache[t.Name] = v
+	}
 }

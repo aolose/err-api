@@ -4,6 +4,6 @@ import (
 	"github.com/mozillazg/go-slugify"
 )
 
-func trans(str string) string {
+func slug(str string) string {
 	return slugify.Slugify(str)
 }
