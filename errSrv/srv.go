@@ -68,7 +68,7 @@ func Run(addr string) {
 	})
 	tag.Get("/all", func(ctx iris.Context) {
 		var gs []Tag
-		err := db.Find(gs).Error
+		err := db.Find(&gs).Error
 		if err == nil {
 			ctx.StatusCode(200)
 			ctx.JSON(gs)
@@ -112,6 +112,7 @@ func Run(addr string) {
 			if v == -1 {
 				nextSysSync(time.Second * 2)
 			}
+			ctx.StatusCode(200)
 			ctx.WriteString(strings.Join([]string{
 				strconv.Itoa(int(p.ID)),
 				p.Slug,
@@ -199,15 +200,15 @@ func getCtx(ctx iris.Context) {
 }
 
 type ListPubPost struct {
-	Posts []*PubLisArt `json:"ls"`
-	Total int          `json:"total"`
-	Cur   int          `json:"cur"`
+	Posts []PubLisArt `json:"ls"`
+	Total int         `json:"total"`
+	Cur   int         `json:"cur"`
 }
 
 type ListPost struct {
-	Posts []*Art `json:"ls"`
-	Total int    `json:"total"`
-	Cur   int    `json:"cur"`
+	Posts []Art `json:"ls"`
+	Total int   `json:"total"`
+	Cur   int   `json:"cur"`
 }
 
 func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
@@ -226,10 +227,9 @@ func getPosst(ctx iris.Context) {
 	if count == 0 {
 		count = 5
 	}
-	p := []*PubLisArt{}
-	db.Model(&Art{}).Select("art_his.title as title, art_his.content as content, arts.slug as slug").
-		Joins("left join art_his on arts.id = art_his.a_id and arts.version = art_his.version").
-		Offset((page-1)*count).Limit(count).Where("arts.version != ?", -1).Take(&p)
+	p := []PubLisArt{}
+	db.Model(&Art{}).Offset((page-1)*count).
+		Limit(count).Where("arts.version != ?", -1).Take(&p)
 	ls := &ListPubPost{
 		Posts: p,
 		Total: (sys.TotalPubPosts + count - 1) / count,
@@ -248,7 +248,7 @@ func getEdits(ctx iris.Context) {
 	if count == 0 {
 		count = 20
 	}
-	p := []*Art{}
+	p := []Art{}
 	var c int64
 	t := sys.TotalPosts
 	tx := db.Offset((page - 1) * count).Limit(count)
@@ -269,20 +269,13 @@ func getEdits(ctx iris.Context) {
 
 func getPost(ctx iris.Context) {
 	p := &Art{}
-	h := &ArtHis{}
 	err := db.Preload("Author").First(p, "slug = ?", ctx.Params().Get("slug")).Error
 	if err == nil {
-		err = db.Where("a_id = ? and version = ?", p.ID, p.Version).First(h).Error
-	}
-	if err == nil {
 		pp := p.PubArt
-		pp.Content = h.Content
-		pp.Title = h.Title
 		ctx.JSON(pp)
 	} else {
 		handleErr(ctx, err)
 	}
-
 }
 
 func setPost(ctx iris.Context) {

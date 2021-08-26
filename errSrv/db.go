@@ -22,6 +22,17 @@ func initSys() {
 	sys = &System{}
 	db.FirstOrCreate(sys)
 	syncSys()
+	var tas []TagArt
+	db.Find(&tas)
+loop:
+	for _, t := range tas {
+		ok, v := hasTag(t.AID, t.Name)
+		if ok {
+			continue loop
+		}
+		v = append(v, t.AID)
+		tagsCache[t.Name] = v
+	}
 }
 
 var nextSyncSys time.Time

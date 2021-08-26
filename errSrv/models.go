@@ -13,7 +13,7 @@ type CreateDate struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-var tagsCache map[string][]uint
+var tagsCache = map[string][]uint{}
 
 type System struct {
 	ID            uint
@@ -58,14 +58,15 @@ type Comment struct {
 }
 
 type PubLisArt struct {
-	Banner  string `json:"banner"`
-	Desc    string `json:"desc"`
-	Title   string `json:"title" grom:"-"`
-	Slug    string `json:"slug" gorm:"not null;index"`
-	Content string `json:"content" grom:"-"`
+	Banner   string `json:"banner"`
+	Desc     string `json:"desc"`
+	PubTitle string `json:"pubTitle"`
+	Slug     string `json:"slug" gorm:"not null;index"`
+	Content  string `json:"content" grom:"-"`
 }
 
 type PubArt struct {
+	PubContent   string `json:"pubCont"`
 	AuthorID     uint   `json:"-"`
 	Author       Author `json:"author"`
 	Ress         []Res  `json:"-"`
@@ -73,7 +74,7 @@ type PubArt struct {
 	Pwd          string `json:"-"`
 	Updated      int64  `json:"updated"`
 	Created      int64  `json:"created"`
-	Tags         string `json:"tagsCache"`
+	Tags         string `json:"tags"`
 	PubLisArt
 }
 
@@ -113,7 +114,10 @@ func (p *Art) SetPublic(pu PubArt) *Art {
 	return p
 }
 
-func save(p *Art) error {
+func save(p *Art, pub bool) error {
+	if !pub {
+		p.PubArt = PubArt{}
+	}
 	n := time.Now().Unix()
 	p.SaveAt = n
 	if p.ID == 0 {
@@ -133,7 +137,7 @@ func save(p *Art) error {
 }
 
 func (p *Art) Save() error {
-	err := save(p)
+	err := save(p, false)
 	return err
 }
 
@@ -141,6 +145,8 @@ var nTags string
 var dTags string
 
 func (p *Art) Publish() error {
+	nTags = ""
+	dTags = ""
 	var err error
 	if p.ID != 0 {
 		c := &Art{ID: p.ID}
@@ -209,7 +215,9 @@ func (p *Art) Publish() error {
 	if c > 0 {
 		p.Slug += strconv.Itoa(int(c))
 	}
-	err = save(p)
+	p.PubTitle = p.Title
+	p.PubContent = p.Content
+	err = save(p, true)
 	if err == nil {
 		if p.Version == -1 {
 			p.Version = n
@@ -242,36 +250,45 @@ func hasTag(id uint, name string) (bool, []uint) {
 }
 
 func addTags(id uint, name ...string) error {
-	var ts []Tag
-	ta := make([]TagArt, 0)
-	err := db.Where("name not in ?", name).Find(ts).Error
-	if err == nil {
-		l := len(ts)
-		for i := 0; err == nil && i < l; i++ {
-			t := ts[i]
-			err = db.Create(&TagArt{AID: id, Name: t.Name}).Error
-			v := make([]uint, 1)
-			v[0] = id
-			tagsCache[t.Name] = v
-		}
+	if len(name) == 0 {
+		return nil
 	}
-	if err == nil {
-	loop:
-		for _, t := range name {
-			for _, n := range ts {
-				if n.Name == t {
-					continue loop
-				}
+	var old []Tag
+	err := db.Where("name in ?", name).Find(&old).Error
+	if err != nil {
+		return err
+	}
+	nt := make([]Tag, len(name)-len(old))
+	a := 0
+loop:
+	for _, n := range name {
+		for _, t := range old {
+			if t.Name == n {
+				continue loop
 			}
-			ta = append(ta, TagArt{Name: t, AID: id})
-			tagsCache[t] = append(tagsCache[t], id)
 		}
-		err = db.Create(ta).Error
+		nt[a] = Tag{Name: n}
+		a++
+	}
+	err = db.Create(&nt).Error
+	if err == nil {
+		ta := make([]TagArt, 0)
+		for _, n := range name {
+			ok, v := hasTag(id, n)
+			if !ok {
+				ta = append(ta, TagArt{AID: id, Name: n})
+				tagsCache[n] = append(v, id)
+			}
+		}
+		err = db.Create(&ta).Error
 	}
 	return err
 }
 
 func delTags(id uint, name ...string) error {
+	if len(name) == 0 {
+		return nil
+	}
 	ns := make([]string, 0)
 	ts := make([]string, 0)
 	for _, t := range name {
@@ -294,9 +311,14 @@ func delTags(id uint, name ...string) error {
 			}
 		}
 	}
-	err := db.Where("name in =?", ns).Delete(&Tag{}).Error
-	if err == nil {
-		err = db.Where("a_id = ? and name in ?", id, ts).Delete(&TagArt{}).Error
+	var err error
+	if len(ns) > 0 {
+		err = db.Where("name in ?", ns).Delete(&Tag{}).Error
+	}
+	if len(ts) > 0 {
+		if err == nil {
+			err = db.Where("a_id = ? and name in ?", id, ts).Delete(&TagArt{}).Error
+		}
 	}
 	return err
 }
@@ -311,15 +333,4 @@ func dbInit() {
 	db.AutoMigrate(&Author{})
 	db.AutoMigrate(&Comment{})
 	db.AutoMigrate(&Guest{})
-	var tas []*TagArt
-	db.Table("tag_art").Find(tas)
-loop:
-	for _, t := range tas {
-		ok, v := hasTag(t.AID, t.Name)
-		if ok {
-			continue loop
-		}
-		v = append(v, t.AID)
-		tagsCache[t.Name] = v
-	}
 }
