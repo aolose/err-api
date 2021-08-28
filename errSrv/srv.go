@@ -23,7 +23,7 @@ func Run(addr string) {
 	app.UseRouter(func(ctx iris.Context) {
 		r := ctx.Request()
 		fmt.Printf("%v \t %v\n", r.Method, r.URL)
-		ctx.Header("Access-Control-Allow-Origin", "*")
+		ctx.Header("Access-Control-Allow-Origin", r.Header.Get("origin"))
 		ctx.Header("Access-Control-Allow-Credentials", "true")
 		if ctx.Method() == iris.MethodOptions {
 			ctx.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS")
@@ -45,9 +45,15 @@ func Run(addr string) {
 		}
 		ctx.ContentType("text/event-stream")
 		ctx.Header("Cache-Control", "no-cache")
-		now := time.Now()
-		ctx.Writef("data: The server time is: %s\n\n", now)
-		flusher.Flush()
+		for {
+			if ctx.IsCanceled() {
+				break
+			}
+			time.Sleep(time.Second * 5)
+			now := time.Now()
+			_, _ = ctx.Writef("data: The server time is: %s\n\n", now)
+			flusher.Flush()
+		}
 	})
 	post := app.Party("/post")
 	post.Get("/{slug}", getPost)
