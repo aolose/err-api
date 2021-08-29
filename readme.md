@@ -24,3 +24,9 @@
 - [ ] move frontend to vercel 
 - [ ] move backend to vultr 
  
+
+### Upload Files Architecture
+-  split file to multiple chunk then upload though web worker
+-  combine chunk to file in server then save file info to db
+
+![](./img/uploads.jpg)

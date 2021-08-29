@@ -61,7 +61,7 @@ func Run(addr string) {
 			fileCache = make(map[string][]multipart.File)
 			fileInfoCache = make(map[string][2]string)
 		}
-		if tp != "" {
+		if nm != "" {
 			fileInfoCache[key] = [2]string{nm, tp}
 		}
 		pt := ctx.FormValue("part")
@@ -104,12 +104,12 @@ func Run(addr string) {
 			delete(fileCache, key)
 			delete(fileInfoCache, key)
 		}
+		ctx.StatusCode(200)
 		for _, cha := range chs {
 			if cha != nil {
 				cha <- strings.Join([]string{key, pt}, ",")
 			}
 		}
-		ctx.StatusCode(200)
 	})
 	post := app.Party("/post")
 	post.Get("/{slug}", getPost)
@@ -310,7 +310,7 @@ func getEdits(ctx iris.Context) {
 	if count == 0 {
 		count = 20
 	}
-	p := []Art{}
+	p := make([]Art, 0)
 	var c int64
 	t := sys.TotalPosts
 	tx := db.Offset((page - 1) * count).Limit(count)
@@ -368,7 +368,7 @@ func msg(ctx iris.Context) {
 	go func() {
 		ctx.StatusCode(200)
 		flusher.Flush()
-		time.Sleep(time.Second * 4)
+		time.Sleep(time.Second)
 	}()
 	for {
 		if ctx.IsCanceled() {
