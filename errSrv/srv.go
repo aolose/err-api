@@ -1,14 +1,22 @@
 package errSrv
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/kataras/iris/v12"
+	"gorm.io/gorm/clause"
+	"math/rand"
+	"mime/multipart"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
+var chs map[int64]chan string
+
 func Run(addr string) {
+	chs = make(map[int64]chan string)
 	go func() {
 		for {
 			time.Sleep(time.Second * 5)
@@ -38,22 +46,70 @@ func Run(addr string) {
 		fmt.Printf("Error %v \t %v %v\n", r.Method, r.URL, ctx.GetErr())
 		ctx.Next()
 	})
-	app.Get("/msg", func(ctx iris.Context) {
-		flusher, ok := ctx.ResponseWriter().Flusher()
-		if !ok {
-			return
+	app.Get("/msg", auth(msg))
+	const maxSize = 8 * iris.MB
+
+	var fileCache map[string][]multipart.File
+	var fileInfoCache map[string][2]string
+
+	app.Post("/upload", func(ctx iris.Context) {
+		ctx.SetMaxRequestBodySize(maxSize)
+		key := ctx.FormValue("title")
+		nm := ctx.FormValue("name")
+		tp := ctx.FormValue("type")
+		if fileCache == nil {
+			fileCache = make(map[string][]multipart.File)
+			fileInfoCache = make(map[string][2]string)
 		}
-		ctx.ContentType("text/event-stream")
-		ctx.Header("Cache-Control", "no-cache")
-		for {
-			if ctx.IsCanceled() {
+		if tp != "" {
+			fileInfoCache[key] = [2]string{nm, tp}
+		}
+		pt := ctx.FormValue("part")
+		part, _ := strconv.Atoi(pt)
+		total, _ := strconv.Atoi(ctx.FormValue("total"))
+		if _, ok := fileCache[key]; !ok {
+			fileCache[key] = make([]multipart.File, total)
+		}
+		file, _, _ := ctx.FormFile("data")
+		fileCache[key][part] = file
+		done := true
+		for i := 0; i < total; i++ {
+			if fileCache[key][i] == nil {
+				done = false
 				break
 			}
-			time.Sleep(time.Second * 5)
-			now := time.Now()
-			_, _ = ctx.Writef("data: The server time is: %s\n\n", now)
-			flusher.Flush()
 		}
+		if done {
+			fn := "dist/" + key
+			f, _ := os.OpenFile(fn, os.O_WRONLY|os.O_CREATE, 0666)
+			defer f.Close()
+			i := int64(0)
+			for _, ff := range fileCache[key] {
+				buf := new(bytes.Buffer)
+				_, _ = buf.ReadFrom(ff)
+				s, _ := f.Seek(i, 0)
+				ii, _ := f.WriteAt(buf.Bytes(), s)
+				i = int64(ii) + i
+			}
+			inf, _ := fileInfoCache[key]
+			re := Res{
+				Name: inf[0],
+				Type: inf[1],
+				Size: i,
+				ID:   key,
+			}
+			db.Clauses(clause.OnConflict{
+				UpdateAll: true,
+			}).Create(re)
+			delete(fileCache, key)
+			delete(fileInfoCache, key)
+		}
+		for _, cha := range chs {
+			if cha != nil {
+				cha <- strings.Join([]string{key, pt}, ",")
+			}
+		}
+		ctx.StatusCode(200)
 	})
 	post := app.Party("/post")
 	post.Get("/{slug}", getPost)
@@ -298,4 +354,30 @@ func getComments(ctx iris.Context) {
 }
 func setComment(ctx iris.Context) {
 
+}
+func msg(ctx iris.Context) {
+	key := rand.Int63n(1e8)
+	flusher, ok := ctx.ResponseWriter().Flusher()
+	if !ok {
+		return
+	}
+	cha := make(chan string)
+	chs[key] = cha
+	ctx.ContentType("text/event-stream")
+	ctx.Header("Cache-Control", "no-cache")
+	go func() {
+		ctx.StatusCode(200)
+		flusher.Flush()
+		time.Sleep(time.Second * 4)
+	}()
+	for {
+		if ctx.IsCanceled() {
+			cha = nil
+			delete(chs, key)
+			break
+		}
+		c := <-cha
+		_, _ = ctx.Writef("data: %s\n\n", c)
+		flusher.Flush()
+	}
 }

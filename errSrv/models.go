@@ -25,14 +25,10 @@ type System struct {
 }
 
 type Res struct {
-	ID     uint `gorm:"primarykey" json:"-"`
-	Type   string
-	Name   string
-	Remark string
-	Pwd    string
-	Size   int64
-	ArtID  uint
-	Arts   []Art
+	Type string `json:"type"`
+	ID   string `json:"id" gorm:"primarykey" `
+	Name string `json:"name"`
+	Size int64  `json:"size"`
 }
 
 type Guest struct {
@@ -69,7 +65,6 @@ type PubArt struct {
 	PubContent   string `json:"pubCont"`
 	AuthorID     uint   `json:"-"`
 	Author       Author `json:"author"`
-	Ress         []Res  `json:"-"`
 	AllowComment int    `json:"comable"`
 	Pwd          string `json:"-"`
 	Updated      int64  `json:"updated"`
@@ -101,7 +96,6 @@ type Art struct {
 	OverrideUpdate int64  `json:"update2"`
 	OverrideCreate int64  `json:"create2"`
 	OverrideSlug   string `json:"slug2"`
-	ResID          uint   `json:"-"`
 	Version        int64  `json:"ver"`
 	Content        string `json:"content"`
 	Title          string `json:"title" gorm:"index;not null"`
