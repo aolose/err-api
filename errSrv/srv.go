@@ -372,6 +372,11 @@ func msg(ctx iris.Context) {
 	}()
 	for {
 		if ctx.IsCanceled() {
+			go func() {
+				_ = <-cha
+				close(cha)
+			}()
+			time.Sleep(time.Millisecond * 10)
 			cha = nil
 			delete(chs, key)
 			break
