@@ -8,6 +8,23 @@ import (
 	"time"
 )
 
+type ListPubPost struct {
+	Posts []PubLisArt `json:"ls"`
+	Total int         `json:"total"`
+	Cur   int         `json:"cur"`
+}
+type ListRes struct {
+	List  []Res `json:"ls"`
+	Total int   `json:"total"`
+	Cur   int   `json:"cur"`
+}
+
+type ListPost struct {
+	Posts []Art `json:"ls"`
+	Total int   `json:"total"`
+	Cur   int   `json:"cur"`
+}
+
 type CreateDate struct {
 	Created   int64          `json:"created"gorm:"autoCreateTime:milli"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
@@ -20,8 +37,9 @@ type System struct {
 	Admin         string
 	Pwd           string
 	Token         string
-	TotalPubPosts int
-	TotalPosts    int
+	TotalPubPosts int `gorm:"-"`
+	TotalPosts    int `gorm:"-"`
+	TotalRes      int `gorm:"-"`
 }
 
 type Res struct {

@@ -14,13 +14,11 @@ const dbName = "errDB.db"
 var db *gorm.DB
 var sys *System
 
-func DB() *gorm.DB {
-	return db
-}
-
 func initSys() {
 	sys = &System{}
 	db.FirstOrCreate(sys)
+	countPos()
+	countRes()
 	syncSys()
 	var tas []TagArt
 	db.Find(&tas)
@@ -61,18 +59,27 @@ func nextSysSync(v time.Duration) {
 	}
 }
 
-func syncSys() {
+func countPos() {
 	var countPost int64
 	var countPubPost int64
 	db.Model(&Art{}).Where("version > ?", 0).Count(&countPubPost)
 	db.Model(&Art{}).Count(&countPost)
+	sys.TotalPosts = int(countPost)
+	sys.TotalPubPosts = int(countPubPost)
+}
+
+func countRes() {
+	var countRes int64
+	db.Model(&Res{}).Count(&countRes)
+	sys.TotalRes = int(countRes)
+}
+
+func syncSys() {
 	if sys.Admin == "" {
 		sys.Admin = "admin"
 		sys.Pwd = "admin"
 		sys.Token = uuid.New().String()
 	}
-	sys.TotalPosts = int(countPost)
-	sys.TotalPubPosts = int(countPubPost)
 	db.Save(sys)
 }
 
