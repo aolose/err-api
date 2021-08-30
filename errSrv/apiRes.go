@@ -19,14 +19,19 @@ var fileInfoCache map[string][2]string
 var chs map[int64]chan string
 
 func initResApi(app *iris.Application) {
+	app.HandleDir("/r",
+		iris.Dir("./dist"),
+		iris.DirOptions{
+			ShowList: false,
+		},
+	)
 	app.Get("/msg", auth(msg))
 	app.Post("/upload", upload)
 	res := app.Party("/res")
-	res.Get("/page", resLs)
+	res.Get("/{page}", resLs)
 	res.Patch("/{id}/{name}", resCh)
 	res.Delete("/", resDel)
 }
-
 func resCh(ctx iris.Context) {
 	pm := ctx.Params()
 	nm := pm.Get("name")
@@ -57,7 +62,7 @@ func resLs(ctx iris.Context) {
 		db.Table("res").Where(q, v, v).Count(&c)
 		t = int(c)
 	}
-	err := tx.Find(&ls).Error
+	err := tx.Order("date desc").Find(&ls).Error
 	if err == nil {
 		ll := &ListRes{
 			List:  ls,
@@ -104,7 +109,6 @@ func upload(ctx iris.Context) {
 		defer func(f *os.File) {
 			err := f.Close()
 			if err != nil {
-
 			}
 		}(f)
 		i := int64(0)
@@ -121,6 +125,7 @@ func upload(ctx iris.Context) {
 			Type: inf[1],
 			Size: i,
 			ID:   key,
+			Date: time.Now().Unix(),
 		}
 		db.Clauses(clause.OnConflict{
 			UpdateAll: true,
