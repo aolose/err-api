@@ -6,8 +6,31 @@ import (
 	"time"
 )
 
+var jobs []func()
+
+func doJobs() {
+	for {
+		l := len(jobs)
+		if l > 0 {
+			j := jobs[0]
+			jobs = jobs[1:]
+			j()
+		} else {
+			time.Sleep(time.Second)
+		}
+	}
+}
+
+func addJob(fn func()) {
+	if jobs == nil {
+		jobs = make([]func(), 0)
+	}
+	jobs = append(jobs, fn)
+}
+
 func Run(addr string) {
 	chs = make(map[int64]chan string)
+	go doJobs()
 	go func() {
 		for {
 			time.Sleep(time.Second * 5)

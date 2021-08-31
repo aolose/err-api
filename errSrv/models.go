@@ -45,6 +45,7 @@ type System struct {
 type Res struct {
 	Date int64  `json:"date"`
 	Type string `json:"type"`
+	Ext  string `json:"ext"`
 	ID   string `json:"id" gorm:"primarykey" `
 	Name string `json:"name"`
 	Size int64  `json:"size"`

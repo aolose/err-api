@@ -1,8 +1,6 @@
 module srvRun
 
-require (
-	errSrv v0.0.0
-)
+require errSrv v0.0.0
 
 replace errSrv => ../errSrv
 
