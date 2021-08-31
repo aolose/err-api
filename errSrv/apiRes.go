@@ -104,7 +104,6 @@ func upload(ctx iris.Context) {
 	pt := ctx.FormValue("part")
 	part, _ := strconv.Atoi(pt)
 	total, _ := strconv.Atoi(ctx.FormValue("total"))
-	total = total - 1
 	if _, ok := fileCache[key]; !ok {
 		fileCache[key] = make([]multipart.File, total)
 	}
@@ -118,10 +117,10 @@ func upload(ctx iris.Context) {
 		fileInfoCache[key] = [3]string{nm, kind.MIME.Value, kind.Extension}
 		fileFirstCache[key] = bt
 	} else {
-		fileCache[key][part-1] = file
+		fileCache[key][part] = file
 	}
-	done := true
-	for i := 0; i < total; i++ {
+	done := fileFirstCache[key] == nil
+	for i := 1; i < total; i++ {
 		if fileCache[key][i] == nil {
 			done = false
 			break
@@ -141,7 +140,8 @@ func upload(ctx iris.Context) {
 			che := fileCache[key]
 			ii, er := f.Write(fk)
 			i := int64(ii)
-			for _, ff := range che {
+			for n := 1; n < total; n++ {
+				ff := che[n]
 				buf := new(bytes.Buffer)
 				_, _ = buf.ReadFrom(ff)
 				s, _ := f.Seek(i, 0)
@@ -152,7 +152,7 @@ func upload(ctx iris.Context) {
 				i = int64(ii) + i
 			}
 			inf, _ := fileInfoCache[key]
-			re := Res{
+			re := &Res{
 				Name: inf[0],
 				Type: inf[1],
 				Ext:  inf[2],
