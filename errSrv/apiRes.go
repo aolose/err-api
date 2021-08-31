@@ -7,22 +7,42 @@ import (
 	"github.com/kataras/iris/v12"
 	"gorm.io/gorm/clause"
 	"log"
-	"math/rand"
 	"mime/multipart"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var ml = 0
+var mg sync.Map
+
+func setMsg(m string) {
+	mg.Store(ml, m)
+	ml++
+}
+func getMsg() string {
+	if ml == 0 {
+		return ""
+	}
+	ml--
+	m, ok := mg.LoadAndDelete(ml)
+	if ok {
+		return m.(string)
+	}
+	return ""
+}
 
 const maxSize = 8 * iris.MB
 
 var fileCache map[string][]multipart.File
 var fileInfoCache map[string][3]string
 var fileFirstCache map[string][]byte
-var chs map[int64]chan string
+var wg sync.WaitGroup
 
 func initResApi(app *iris.Application) {
+	wg = sync.WaitGroup{}
 	app.HandleDir("/r",
 		iris.Dir("./dist"),
 		iris.DirOptions{
@@ -64,6 +84,20 @@ func resDel(ctx iris.Context) {
 		})
 	}
 }
+
+func wait(fn ...func()) {
+	l := len(fn)
+	wg.Add(l)
+	for _, f := range fn {
+		ff := f
+		go func() {
+			defer wg.Done()
+			ff()
+		}()
+	}
+	wg.Wait()
+}
+
 func resLs(ctx iris.Context) {
 	pg := ctx.Params().GetIntDefault("page", 1)
 	count := ctx.URLParamIntDefault("c", 20)
@@ -104,24 +138,27 @@ func upload(ctx iris.Context) {
 	pt := ctx.FormValue("part")
 	part, _ := strconv.Atoi(pt)
 	total, _ := strconv.Atoi(ctx.FormValue("total"))
+	total = total - 1
 	if _, ok := fileCache[key]; !ok {
 		fileCache[key] = make([]multipart.File, total)
 	}
 	file, _, _ := ctx.FormFile("data")
-
 	if pt == "0" {
 		buf := new(bytes.Buffer)
 		_, _ = buf.ReadFrom(file)
 		bt := buf.Bytes()
 		kind, _ := filetype.Match(bt)
-		fileInfoCache[key] = [3]string{nm, kind.MIME.Value, kind.Extension}
-		fileFirstCache[key] = bt
+		wait(
+			func() { fileInfoCache[key] = [3]string{nm, kind.MIME.Value, kind.Extension} },
+			func() { fileFirstCache[key] = bt },
+		)
 	} else {
-		fileCache[key][part] = file
+		wait(func() { fileCache[key][part-1] = file })
 	}
-	done := fileFirstCache[key] == nil
-	for i := 1; i < total; i++ {
-		if fileCache[key][i] == nil {
+	done := fileFirstCache[key] != nil
+	fc := fileCache[key]
+	for i := 0; i < total; i++ {
+		if fc[i] == nil {
 			done = false
 			break
 		}
@@ -140,7 +177,7 @@ func upload(ctx iris.Context) {
 			che := fileCache[key]
 			ii, er := f.Write(fk)
 			i := int64(ii)
-			for n := 1; n < total; n++ {
+			for n := 0; n < total; n++ {
 				ff := che[n]
 				buf := new(bytes.Buffer)
 				_, _ = buf.ReadFrom(ff)
@@ -169,32 +206,21 @@ func upload(ctx iris.Context) {
 			if strings.HasPrefix(re.Type, "image") {
 				thumbnail(f)
 			}
-			for _, cha := range chs {
-				if cha != nil {
-					cha <- strings.Join([]string{key, pt}, ",")
-				}
-			}
+			setMsg(strings.Join([]string{key, pt}, ","))
 		})
 	} else {
-		for _, cha := range chs {
-			if cha != nil {
-				nf := fileInfoCache[key]
-				cha <- strings.Join([]string{key, pt, nf[1], nf[2]}, ",")
-			}
-		}
+		nf := fileInfoCache[key]
+		setMsg(strings.Join([]string{key, pt, nf[1], nf[2]}, ","))
 	}
 	ctx.StatusCode(200)
 	countRes()
 }
 
 func msg(ctx iris.Context) {
-	key := rand.Int63n(1e8)
 	flusher, ok := ctx.ResponseWriter().Flusher()
 	if !ok {
 		return
 	}
-	cha := make(chan string)
-	chs[key] = cha
 	ctx.ContentType("text/event-stream")
 	ctx.Header("Cache-Control", "no-cache")
 	go func() {
@@ -204,19 +230,14 @@ func msg(ctx iris.Context) {
 	}()
 	for {
 		if ctx.IsCanceled() {
-			go func() {
-				_ = <-cha
-				close(cha)
-				cha = nil
-				delete(chs, key)
-			}()
-			time.Sleep(time.Millisecond * 10)
-			cha = nil
-			delete(chs, key)
 			break
 		}
-		c := <-cha
-		_, _ = ctx.Writef("data: %s\n\n", c)
+		c := getMsg()
+		if c != "" {
+			_, _ = ctx.Writef("data: %s\n\n", c)
+		} else {
+			time.Sleep(time.Millisecond * 500)
+		}
 		flusher.Flush()
 	}
 }

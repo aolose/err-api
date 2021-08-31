@@ -16,7 +16,7 @@ func doJobs() {
 			jobs = jobs[1:]
 			j()
 		} else {
-			time.Sleep(time.Second)
+			time.Sleep(time.Millisecond * 300)
 		}
 	}
 }
@@ -29,7 +29,6 @@ func addJob(fn func()) {
 }
 
 func Run(addr string) {
-	chs = make(map[int64]chan string)
 	go doJobs()
 	go func() {
 		for {
