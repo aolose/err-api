@@ -3,7 +3,6 @@ package errSrv
 import (
 	"fmt"
 	"github.com/kataras/iris/v12"
-	"log"
 	"regexp"
 	"strings"
 )
@@ -24,7 +23,6 @@ func allowCors(app *iris.Application) {
 					" attachment; filename=\""+
 						m1.ReplaceAllString(re.Name, "$1")+"."+re.Ext+"\"",
 				)
-				log.Print("")
 			}
 		}
 		ctx.Header("Access-Control-Allow-Origin", r.Header.Get("origin"))

@@ -15,13 +15,13 @@ func initArtApi(app *iris.Application) {
 	edit := app.Party("/edit")
 	edit.Get("/{page}", auth(getEdits))
 	// save
-	edit.Put("/", savArt)
+	edit.Put("/", auth(savArt))
 	//publish
-	edit.Post("/", artPub)
+	edit.Post("/", auth(artPub))
 	// unpublish
-	edit.Patch("/{id}/{ver}", unPub)
+	edit.Patch("/{id}/{ver}", auth(unPub))
 	// del
-	edit.Delete("/{id}", delArt)
+	edit.Delete("/{id}", auth(delArt))
 }
 
 func getPosst(ctx iris.Context) {

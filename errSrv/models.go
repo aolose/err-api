@@ -36,10 +36,10 @@ type System struct {
 	ID            uint
 	Admin         string
 	Pwd           string
-	Token         string
-	TotalPubPosts int `gorm:"-"`
-	TotalPosts    int `gorm:"-"`
-	TotalRes      int `gorm:"-"`
+	Token         string `gorm:"-"`
+	TotalPubPosts int    `gorm:"-"`
+	TotalPosts    int    `gorm:"-"`
+	TotalRes      int    `gorm:"-"`
 }
 
 type Res struct {

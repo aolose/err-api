@@ -50,12 +50,13 @@ func initResApi(app *iris.Application) {
 		},
 	)
 	app.Get("/msg", auth(msg))
-	app.Post("/upload", upload)
+	app.Post("/upload", auth(upload))
 	res := app.Party("/res")
-	res.Get("/{page}", resLs)
-	res.Patch("/{id}/{name}", resCh)
-	res.Delete("/", resDel)
+	res.Get("/{page}", auth(resLs))
+	res.Patch("/{id}/{name}", auth(resCh))
+	res.Delete("/", auth(resDel))
 }
+
 func resCh(ctx iris.Context) {
 	pm := ctx.Params()
 	nm := pm.Get("name")

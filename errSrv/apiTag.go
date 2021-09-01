@@ -4,7 +4,7 @@ import "github.com/kataras/iris/v12"
 
 func initTagsApi(app *iris.Application) {
 	tag := app.Party("/tag")
-	tag.Get("/ls", getTags)
+	tag.Get("/ls", auth(getTags))
 	tag.Get("/all", getTags2)
 	tag.Get("/{name}/{page}", getTagArt)
 }

@@ -2,7 +2,6 @@ package errSrv
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"log"
@@ -78,7 +77,6 @@ func syncSys() {
 	if sys.Admin == "" {
 		sys.Admin = "admin"
 		sys.Pwd = "admin"
-		sys.Token = uuid.New().String()
 	}
 	db.Save(sys)
 }
