@@ -52,7 +52,7 @@ func Run(addr string) {
 		ctx.Next()
 	})
 	app.Post("/auth", auth(nil))
-	app.Post("/ot", auth(func(ctx iris.Context) {
+	app.Get("/ot", auth(func(ctx iris.Context) {
 		sys.Token = ""
 	}))
 	initArtApi(app)
