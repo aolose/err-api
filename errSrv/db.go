@@ -134,7 +134,7 @@ func pageQuery(table string, total *int64, field ...string) func(ctx iris.Contex
 			tx.Count(&c)
 		}
 		bl := make([]BlackList, 0)
-		err := tx.Order("created desc").Find(&bl).Error
+		err := tx.Order("saved desc").Find(&bl).Error
 		if err != nil {
 			handleErr(ctx, err)
 		} else {

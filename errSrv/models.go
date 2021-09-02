@@ -7,18 +7,18 @@ import (
 )
 
 type BlackList struct {
-	ID      uint   `gorm:"primarykey" json:"id"`
-	Created int64  `json:"created"`
-	IP      string `json:"ip"`
-	Type    int    `json:"type"`
-	Life    int64  `json:"life"`
-	Reason  string `json:"reason"`
+	ID     uint   `gorm:"primarykey" json:"id"`
+	Saved  int64  `json:"saved"`
+	IP     string `json:"ip"`
+	Type   int    `json:"type"`
+	Life   int64  `json:"life"`
+	Reason string `json:"reason"`
 }
 
 type BKManager []BlackList
 
 func (b *BKManager) add(bl BlackList) {
-	bl.Created = now()
+	bl.Saved = now()
 	db.Create(bl)
 }
 
@@ -46,10 +46,10 @@ type ListPost struct {
 var tagsCache = map[string][]uint{}
 
 type QA struct {
-	ID      uint   `gorm:"primarykey" json:"id"`
-	Q       string `gorm:"index" json:"q"`
-	A       string `json:"a"`
-	Created int64  `json:"-"`
+	ID    uint   `gorm:"primarykey" json:"id"`
+	Q     string `gorm:"index" json:"q"`
+	A     string `json:"a"`
+	Saved int64  `json:"saved"`
 }
 
 type System struct {
