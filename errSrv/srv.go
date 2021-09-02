@@ -24,9 +24,18 @@ func doJobs() {
 		}
 	}
 }
-func autoClean() {
-	sys.Token = ""
+
+var nextToken = int64(0)
+var day = int64(60 * 60 * 24)
+
+func cleanToken() {
+	n := now()
+	if nextToken < n {
+		nextToken = n + day*2
+		sys.Token = ""
+	}
 }
+
 func addJob(fn func()) {
 	if jobs == nil {
 		jobs = make([]func(), 0)
@@ -39,11 +48,8 @@ func Run(addr string) {
 	go func() {
 		for {
 			time.Sleep(time.Second * 5)
-			n := time.Now()
-			if nextClean.Before(n) {
-				autoClean()
-				nextClean = nextClean.Add(time.Hour * 999)
-			}
+			cleanQuestion()
+			cleanToken()
 		}
 	}()
 	app := iris.New()

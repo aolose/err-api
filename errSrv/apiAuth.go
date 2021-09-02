@@ -2,7 +2,6 @@ package errSrv
 
 import (
 	"github.com/kataras/iris/v12"
-	"time"
 )
 
 func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
@@ -50,7 +49,7 @@ func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 		if !pass {
 			authFail(ctx)
 		} else {
-			nextCleanDelay(time.Hour * 24)
+			nextTokenCleanDelay()
 			if next != nil {
 				next(ctx)
 			}

@@ -5,7 +5,6 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"log"
-	"time"
 )
 
 const dbName = "errDB.db"
@@ -18,6 +17,7 @@ func initSys() {
 	db.FirstOrCreate(sys)
 	countPos()
 	countRes()
+	refreshQaCache()
 	syncSys()
 	var tas []TagArt
 	db.Find(&tas)
@@ -31,8 +31,6 @@ loop:
 		tagsCache[t.Name] = v
 	}
 }
-
-var nextClean time.Time
 
 func slugCount(str string, id uint) int64 {
 	var c int64
@@ -50,12 +48,8 @@ func slugCount(str string, id uint) int64 {
 	return c
 }
 
-func nextCleanDelay(v time.Duration) {
-	n := time.Now()
-	t := n.Add(v)
-	if nextClean.Before(n) || (nextClean.After(t) && n.Before(t)) {
-		nextClean = t
-	}
+func nextTokenCleanDelay() {
+	nextToken = now() + day*2
 }
 
 func countPos() {

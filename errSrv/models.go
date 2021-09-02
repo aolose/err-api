@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type ListPubPost struct {
@@ -31,6 +30,11 @@ type CreateDate struct {
 }
 
 var tagsCache = map[string][]uint{}
+
+type QA struct {
+	Q string `gorm:"index"`
+	A string
+}
 
 type System struct {
 	ID            uint
@@ -132,7 +136,7 @@ func save(p *Art, pub bool) error {
 	if !pub {
 		p.PubArt = PubArt{}
 	}
-	n := time.Now().Unix()
+	n := now()
 	p.SaveAt = n
 	if p.ID == 0 {
 		if p.Created == 0 {
@@ -210,7 +214,7 @@ func (p *Art) Publish() error {
 	if err != nil {
 		return err
 	}
-	n := time.Now().Unix()
+	n := now()
 	p.Updated = n
 	if p.OverrideUpdate != 0 {
 		p.Updated = p.Updated
@@ -339,6 +343,7 @@ func delTags(id uint, name ...string) error {
 
 func dbInit() {
 	db.AutoMigrate(&System{})
+	db.AutoMigrate(&QA{})
 	db.AutoMigrate(&Art{})
 	db.AutoMigrate(&ArtHis{})
 	db.AutoMigrate(&Tag{})

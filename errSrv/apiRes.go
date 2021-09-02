@@ -196,7 +196,7 @@ func upload(ctx iris.Context) {
 				Ext:  inf[2],
 				Size: i,
 				ID:   key,
-				Date: time.Now().Unix(),
+				Date: now(),
 			}
 			db.Clauses(clause.OnConflict{
 				UpdateAll: true,
