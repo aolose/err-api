@@ -1,11 +1,30 @@
 package errSrv
 
 import (
-	"gorm.io/gorm"
 	"math/rand"
 	"strconv"
 	"strings"
 )
+
+type BlackList struct {
+	ID      uint   `gorm:"primarykey" json:"id"`
+	Created int64  `json:"created"`
+	IP      string `json:"ip"`
+	Type    int    `json:"type"`
+	Life    int64  `json:"life"`
+	Reason  string `json:"reason"`
+}
+
+type BKManager []BlackList
+
+func (b *BKManager) add(bl BlackList) {
+	bl.Created = now()
+	db.Create(bl)
+}
+
+func (b *BKManager) rm(id int) {
+	db.Delete(&BlackList{}, id)
+}
 
 type ListPubPost struct {
 	Posts []PubLisArt `json:"ls"`
@@ -24,22 +43,21 @@ type ListPost struct {
 	Cur   int   `json:"cur"`
 }
 
-type CreateDate struct {
-	Created   int64          `json:"created"gorm:"autoCreateTime:milli"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
-}
-
 var tagsCache = map[string][]uint{}
 
 type QA struct {
-	Q string `gorm:"index"`
-	A string
+	ID      uint   `gorm:"primarykey" json:"id"`
+	Q       string `gorm:"index" json:"q"`
+	A       string `json:"a"`
+	Created int64  `json:"-"`
 }
 
 type System struct {
 	ID            uint
 	Admin         string
 	Pwd           string
+	LoginProtect  bool
+	CommentQA     bool
 	Token         string `gorm:"-"`
 	TotalPubPosts int    `gorm:"-"`
 	TotalPosts    int    `gorm:"-"`
@@ -67,12 +85,11 @@ type Author struct {
 }
 
 type Comment struct {
-	ID uint `gorm:"primarykey" json:"id"`
-	CreateDate
+	ID      uint   `gorm:"primarykey" json:"id"`
 	Avatar  int    `json:"avatar"`
 	Name    string `json:"name"`
 	ArtID   uint   `json:"-"`
-	reply   uint   `json:"reply"`
+	Reply   uint   `json:"reply"`
 	Content string `json:"content"`
 	Link    string `json:"link"`
 }
@@ -344,6 +361,7 @@ func delTags(id uint, name ...string) error {
 func dbInit() {
 	db.AutoMigrate(&System{})
 	db.AutoMigrate(&QA{})
+	db.AutoMigrate(&BlackList{})
 	db.AutoMigrate(&Art{})
 	db.AutoMigrate(&ArtHis{})
 	db.AutoMigrate(&Tag{})

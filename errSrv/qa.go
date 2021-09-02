@@ -98,8 +98,6 @@ func (c *QAClient) checkA(k string, a string) (string, *QATicket, int64) {
 	if a != "" {
 		if _a, ok := c.qs[k]; ok && _a.A == a {
 			delete(c.qs, k)
-			c.tick = 10
-			c.delay = qaLife
 			return "", nil, 0
 		}
 	}
@@ -108,13 +106,13 @@ func (c *QAClient) checkA(k string, a string) (string, *QATicket, int64) {
 
 var nextQaClean = int64(0)
 
-func cleanQuestion() {
+func cleanQA() {
 	n := now()
 	if nextQaClean < n {
 		nextQaClean = n + qaLife
 		cc := make([]*QAClient, 0)
 		for _, cli := range qaClients {
-			if cli.expire > n {
+			if cli.expire > n || cli.nextTickTime > n {
 				for k, v := range cli.qs {
 					if v.expire < n {
 						delete(cli.qs, k)

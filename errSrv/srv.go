@@ -48,7 +48,7 @@ func Run(addr string) {
 	go func() {
 		for {
 			time.Sleep(time.Second * 5)
-			cleanQuestion()
+			cleanQA()
 			cleanToken()
 		}
 	}()

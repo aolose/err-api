@@ -11,7 +11,9 @@ func allowCors(app *iris.Application) {
 	app.UseRouter(func(ctx iris.Context) {
 		r := ctx.Request()
 		fmt.Printf("%v \t %v\n", r.Method, r.URL)
-		if r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/r/") {
+		if r.Method == "GET" &&
+			strings.HasPrefix(r.URL.Path, "/r/") &&
+			!strings.HasSuffix(r.URL.Path, ".png") {
 			id := r.URL.Path[3:]
 			re := &Res{ID: id}
 			err := db.First(re).Error

@@ -116,7 +116,7 @@ func resLs(ctx iris.Context) {
 	}
 	err := tx.Order("date desc").Find(&ls).Error
 	if err == nil {
-		ll := &ListRes{
+		ll := &ListResult{
 			List:  ls,
 			Total: (t + count - 1) / count,
 			Cur:   pg,
