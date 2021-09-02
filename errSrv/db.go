@@ -32,7 +32,7 @@ loop:
 	}
 }
 
-var nextSyncSys time.Time
+var nextClean time.Time
 
 func slugCount(str string, id uint) int64 {
 	var c int64
@@ -50,11 +50,11 @@ func slugCount(str string, id uint) int64 {
 	return c
 }
 
-func nextSysSync(v time.Duration) {
+func nextCleanDelay(v time.Duration) {
 	n := time.Now()
 	t := n.Add(v)
-	if nextSyncSys.Before(n) || (nextSyncSys.After(t) && n.Before(t)) {
-		nextSyncSys = t
+	if nextClean.Before(n) || (nextClean.After(t) && n.Before(t)) {
+		nextClean = t
 	}
 }
 

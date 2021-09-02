@@ -24,7 +24,9 @@ func doJobs() {
 		}
 	}
 }
-
+func autoClean() {
+	sys.Token = ""
+}
 func addJob(fn func()) {
 	if jobs == nil {
 		jobs = make([]func(), 0)
@@ -38,9 +40,9 @@ func Run(addr string) {
 		for {
 			time.Sleep(time.Second * 5)
 			n := time.Now()
-			if nextSyncSys.Before(n) {
-				syncSys()
-				nextSyncSys = nextSyncSys.Add(time.Hour * 999)
+			if nextClean.Before(n) {
+				autoClean()
+				nextClean = nextClean.Add(time.Hour * 999)
 			}
 		}
 	}()
@@ -115,57 +117,9 @@ func authFail(ctx iris.Context) {
 		Path:     "/",
 	}, iris.CookieAllowSubdomains())
 	ctx.StatusCode(403)
-	ctx.WriteString("auth fail")
-}
-
-func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
-	return func(ctx iris.Context) {
-		pass := false
-		if next == nil {
-			b, err := ctx.GetBody()
-			if err == nil {
-				s := string(b)
-				if len(s) > 10 {
-					if s[0] == '_' {
-						usr, pwd, er := upk(s)
-						if er == nil {
-							if sys.Admin == usr && sys.Pwd == pwd {
-								pass = true
-								ctx.StatusCode(200)
-								_, _ = ctx.WriteString(newTk())
-							}
-						}
-					} else {
-						if len(sys.Token) > 20 && sys.Token == s {
-							pass = true
-							ctx.StatusCode(200)
-							ctx.SetCookie(&iris.Cookie{
-								Name:     "session_id",
-								Value:    sys.Token,
-								HttpOnly: true,
-								MaxAge:   60 * 60 * 24 * 7,
-								SameSite: iris.SameSiteLaxMode,
-								Path:     "/",
-							}, iris.CookieAllowSubdomains())
-						}
-					}
-				}
-			} else {
-				handleErr(ctx, err)
-			}
-		} else {
-			ck := ctx.GetCookie("session_id", iris.CookieAllowSubdomains())
-			if len(ck) > 10 && ck == sys.Token {
-				pass = true
-			}
-
-		}
-		if !pass {
-			authFail(ctx)
-		} else {
-			if next != nil {
-				next(ctx)
-			}
-		}
+	d := "auth fail"
+	if sys.Token == "" {
+		d = "session expired"
 	}
+	ctx.WriteString(d)
 }
