@@ -218,28 +218,31 @@ func upload(ctx iris.Context) {
 }
 
 func msg(ctx iris.Context) {
-	flusher, ok := ctx.ResponseWriter().Flusher()
-	if !ok {
-		return
-	}
-	ctx.ContentType("text/event-stream")
-	ctx.Header("Cache-Control", "no-cache")
-	go func() {
-		ctx.StatusCode(200)
-		flusher.Flush()
-		time.Sleep(time.Second)
-	}()
-	for {
-		if ctx.IsCanceled() {
-			break
+	if strings.Contains(ctx.GetHeader("accept"), "text/event-stream") {
+		flusher, ok := ctx.ResponseWriter().Flusher()
+		if !ok {
+			return
 		}
-		c := getMsg()
-		if c != "" {
-			_, _ = ctx.Writef("data: %s\n\n", c)
-		} else {
-			time.Sleep(time.Millisecond * 500)
+		ctx.ContentType("text/event-stream")
+		ctx.Header("Cache-Control", "no-cache")
+		go func() {
+			flusher.Flush()
+			time.Sleep(time.Second * 3)
+		}()
+		for {
+			if ctx.IsCanceled() {
+				break
+			}
+			c := getMsg()
+			if c != "" {
+				_, _ = ctx.Writef("data: %s\n\n", c)
+			} else {
+				time.Sleep(time.Millisecond * 500)
+			}
+			flusher.Flush()
 		}
-		flusher.Flush()
+	} else {
+		ctx.StatusCode(404)
 	}
 }
 

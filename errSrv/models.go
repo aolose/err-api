@@ -54,7 +54,7 @@ type ListPost struct {
 
 var tagsCache = map[string][]uint{}
 
-type QA struct {
+type Qa struct {
 	ID     uint   `gorm:"primarykey" json:"id"`
 	Q      string `gorm:"index" json:"q"`
 	A      string `json:"a"`
@@ -371,7 +371,7 @@ func delTags(id uint, name ...string) error {
 
 func dbInit() {
 	db.AutoMigrate(&System{})
-	db.AutoMigrate(&QA{})
+	db.AutoMigrate(&Qa{})
 	db.AutoMigrate(&BlackList{})
 	db.AutoMigrate(&Art{})
 	db.AutoMigrate(&ArtHis{})

@@ -84,11 +84,11 @@ func RunGomacro(toeval string) reflect.Value {
 	return vals[0].ReflectValue()
 }
 
-var qaCache []QA
+var qaCache []Qa
 
 var qaClients []*QAClient
 
-func (qa *QA) build() *QATicket {
+func (qa *Qa) build() *QATicket {
 	// todo check
 	q := qa.Q
 	a := qa.A

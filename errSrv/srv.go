@@ -116,14 +116,6 @@ func upk(s string) (string, string, error) {
 }
 
 func authFail(ctx iris.Context) {
-	ctx.SetCookie(&iris.Cookie{
-		Name:     "session_id",
-		Value:    "",
-		HttpOnly: true,
-		MaxAge:   60 * 60 * 24 * 7,
-		SameSite: iris.SameSiteLaxMode,
-		Path:     "/",
-	}, iris.CookieAllowSubdomains())
 	ctx.StatusCode(403)
 	d := "auth fail"
 	if sys.Token == "" {
