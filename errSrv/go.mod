@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/Joker/hpp v1.0.0 // indirect
 	github.com/andybalholm/brotli v1.0.2 // indirect
+	github.com/cosmos72/gomacro v0.0.0-20210624153544-b4935e406a41
 	github.com/disintegration/imaging v1.6.2
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.1.2

@@ -67,6 +67,8 @@ func Run(addr string) {
 	initTagsApi(app)
 	initResApi(app)
 	initHisApi(app)
+	initQa(app)
+	initBlackList(app)
 	_ = app.Listen(addr)
 }
 

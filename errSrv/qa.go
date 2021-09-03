@@ -1,14 +1,65 @@
 package errSrv
 
 import (
+	"errors"
+	"fmt"
+	"github.com/cosmos72/gomacro/fast"
+	xr "github.com/cosmos72/gomacro/xreflect"
 	"math/rand"
+	"reflect"
+	"regexp"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 )
 
 type QATicket struct {
-	QA
+	Q      string `gorm:"index" json:"q"`
+	A      string
 	expire int64
+}
+
+func eval(s string) ([]xr.Value, error) {
+	wa := sync.WaitGroup{}
+	var r []xr.Value
+	var err error
+	wa.Add(1)
+	go func() {
+		defer func() {
+			rec := recover()
+			if rec != nil {
+				r = nil
+				err = errors.New(fmt.Sprintf("%v", rec))
+			}
+			wa.Done()
+		}()
+		vm := fast.New()
+		r, _ = vm.Eval(s)
+	}()
+	wa.Wait()
+	return r, err
+}
+
+func (q *QATicket) check(s string) (bool, error) {
+	a := q.A
+	if strings.HasPrefix(a, "func(") {
+		res, er := eval(`func r(answer string){` + a + `}\n run("` + a + `")"`)
+		if er != nil {
+			return false, er
+		}
+		return res[0].Bool(), nil
+	} else {
+		if strings.ContainsAny(a, "+-*/()") {
+			res, er := eval(a)
+			if er != nil {
+				return false, er
+			}
+			return a == fmt.Sprintf("%v", res[0].ReflectValue()), nil
+		} else {
+			return s == a, nil
+		}
+	}
 }
 
 type QAClient struct {
@@ -27,13 +78,44 @@ func now() int64 {
 	return time.Now().Unix()
 }
 
+func RunGomacro(toeval string) reflect.Value {
+	interp := fast.New()
+	vals, _ := interp.Eval(toeval)
+	return vals[0].ReflectValue()
+}
+
 var qaCache []QA
 
 var qaClients []*QAClient
 
-func (qa *QA) build() QA {
-
-	return QA{}
+func (qa *QA) build() *QATicket {
+	// todo check
+	q := qa.Q
+	a := qa.A
+	r := regexp.MustCompile("(%[dsvi])").FindAllStringIndex(q, -1)
+	r1 := regexp.MustCompile("(%[dsvi])").FindAllStringIndex(qa.A, -1)
+	s := strings.Split(qa.Params, ",")
+	l := len(s) / 2
+	p := make([]interface{}, l)
+	for i := 0; i < l; i++ {
+		mi, _ := strconv.Atoi(s[i*2])
+		ma, _ := strconv.Atoi(s[i*2+1])
+		v := mi + rand.Intn(ma-mi)
+		p[i] = v
+	}
+	if l0 := len(r); l0 > 0 {
+		p0 := p[:l0]
+		q = fmt.Sprintf(q, p0...)
+	}
+	if l1 := len(r1); l1 > 0 {
+		p1 := p[:l1]
+		a = fmt.Sprintf(qa.A, p1...)
+	}
+	return &QATicket{
+		Q:      q,
+		A:      a,
+		expire: now() + qaLife,
+	}
 }
 
 func randKey() string {
@@ -60,8 +142,7 @@ func getQaCli(ip string) *QAClient {
 }
 func randQa() *QATicket {
 	l := len(qaCache)
-	q := qaCache[rand.Intn(l)].build()
-	return &QATicket{q, now() + qaLife}
+	return qaCache[rand.Intn(l)].build()
 }
 
 func (c *QAClient) getWaitTime() int64 {
@@ -79,6 +160,15 @@ func (c *QAClient) getQA(k string) (string, *QATicket, int64) {
 		c.nextTickTime = now() + c.delay
 	} else if c.tick == 0 {
 		n := now()
+		if c.nextTickTime > c.expire {
+			bm.add(BlackList{
+				IP:   c.ip,
+				Type: BkLogin,
+			})
+			c.expire = 0
+			cleanQA()
+			return "", nil, -1
+		}
 		if c.nextTickTime > n {
 			return "", nil, n - c.nextTickTime
 		}
@@ -96,9 +186,12 @@ func (c *QAClient) getQA(k string) (string, *QATicket, int64) {
 
 func (c *QAClient) checkA(k string, a string) (string, *QATicket, int64) {
 	if a != "" {
-		if _a, ok := c.qs[k]; ok && _a.A == a {
-			delete(c.qs, k)
-			return "", nil, 0
+		if _a, ok := c.qs[k]; ok {
+			pass, _ := _a.check(a)
+			if pass {
+				delete(c.qs, k)
+				return "", nil, 0
+			}
 		}
 	}
 	return c.getQA(k)
@@ -112,7 +205,7 @@ func cleanQA() {
 		nextQaClean = n + qaLife
 		cc := make([]*QAClient, 0)
 		for _, cli := range qaClients {
-			if cli.expire > n || cli.nextTickTime > n {
+			if cli.expire > n {
 				for k, v := range cli.qs {
 					if v.expire < n {
 						delete(cli.qs, k)
