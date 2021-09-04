@@ -9,6 +9,8 @@ var totalBL int64
 
 func initBlackList(app *iris.Application) {
 	syncTotal("black_lists", &totalBL)
+	blackCache = &BlCAche{}
+	blackCache.load()
 	bk := app.Party("/bk")
 	bk.Get("/", pageQuery("black_lists", &totalBL, "ip", "tp"))
 	bk.Post("/", bkSave)
@@ -16,6 +18,7 @@ func initBlackList(app *iris.Application) {
 }
 
 func bkSave(ctx iris.Context) {
+
 	syncTotal("black_lists", &totalBL)
 }
 func bkDel(ctx iris.Context) {
@@ -23,4 +26,5 @@ func bkDel(ctx iris.Context) {
 	bm.rm(id)
 	syncTotal("black_lists", &totalBL)
 	ctx.StatusCode(200)
+	blackCache = &BlCAche{}
 }

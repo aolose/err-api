@@ -2,9 +2,88 @@ package errSrv
 
 import (
 	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 )
+
+type BlCAche struct {
+	idx []int
+	ips [][]string
+}
+
+var blackCache *BlCAche
+
+func (bc *BlCAche) add(ip string) *[]string {
+	l0 := len(ip)
+	l := len(bc.idx)
+	for i := 0; i < l; i++ {
+		if bc.idx[i] == l0 {
+			bc.ips[i] = append(bc.ips[i], ip)
+			return &bc.ips[i]
+		}
+	}
+	bc.idx = append(bc.idx, l0)
+	bc.ips = append(bc.ips, []string{ip})
+	return nil
+}
+func (bc *BlCAche) rm(ip string) {
+	l0 := len(ip)
+	l := len(bc.idx)
+	for i := 0; i < l; i++ {
+		if bc.idx[i] == l0 {
+			for n, p := range bc.ips[i] {
+				if p == ip {
+					a := bc.ips[n:]
+					bc.ips = bc.ips[:n-1]
+					for _, v := range a {
+						bc.ips = append(bc.ips, v)
+					}
+					return
+				}
+			}
+			return
+		}
+	}
+}
+
+func (bc *BlCAche) load() {
+	bk := make([]BlackList, 0)
+	db.Find(&bk)
+	for _, b := range bk {
+		bc.add(b.IP)
+	}
+	for _, p := range bc.ips {
+		sort.Strings(p)
+	}
+}
+
+func (bc *BlCAche) has(ip string) bool {
+	l := len(ip)
+	l1 := len(bc.idx)
+	for i := 0; i < l1; i++ {
+		if bc.idx[i] == l {
+			ls := bc.ips[i]
+			l2 := len(ls)
+			s := 0
+			e := l2
+			for n := l2 / 2; n >= s && n < e && e > s; {
+				v := ls[n]
+				if v == ip {
+					return true
+				}
+				if v > ip {
+					s = n + 1
+					n = (s + e) / 2
+				} else {
+					e = n
+					n = (s + e) / 2
+				}
+			}
+		}
+	}
+	return false
+}
 
 type BlackList struct {
 	ID     uint   `gorm:"primarykey" json:"id"`
@@ -29,10 +108,15 @@ type BKManager []BlackList
 func (b *BKManager) add(bl BlackList) {
 	bl.Saved = now()
 	db.Create(bl)
+	s := blackCache.add(bl.IP)
+	if s != nil {
+		sort.Strings(*s)
+	}
 }
 
 func (b *BKManager) rm(id int) {
 	db.Delete(&BlackList{}, id)
+	blackCache.load()
 }
 
 type ListPubPost struct {
