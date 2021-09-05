@@ -9,29 +9,30 @@ var totalQA int64
 func initQa(app *iris.Application) {
 	syncTotal("qas", &totalQA)
 	qa := app.Party("/qa")
-	qa.Get("/", pageQuery("qas", &totalQA, "%q%", "%a%"))
+	qa.Get("/{page}", pageQuery("qas", &totalQA, "%q%", "%a%"))
 	qa.Post("/test", auth(testQa))
 	qa.Post("/", auth(qaSave))
 	qa.Delete("/", auth(qaDel))
 	qa.Patch("/", auth(qaSave))
 }
 
-type Tqa struct {
-	Qa
-	test string
-}
-
 func testQa(ctx iris.Context) {
-	p := &Tqa{}
-	var pass bool
+	p := &Qa{}
 	err := ctx.ReadJSON(p)
 	if err == nil {
-		pass, err = p.Qa.build().check(p.test)
+		tk, er := p.build()
+		if er == nil {
+			ctx.JSON(map[string]string{
+				"q": tk.Q,
+				"a": tk.A,
+			})
+		} else {
+			handleErr(ctx, er)
+		}
+	} else {
+		handleErr(ctx, err)
 	}
-	ctx.StatusCode(200)
-	if !pass {
-		ctx.WriteString(err.Error())
-	}
+
 }
 
 func qaSave(ctx iris.Context) {

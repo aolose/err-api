@@ -142,8 +142,7 @@ type Qa struct {
 	ID     uint   `gorm:"primarykey" json:"id"`
 	Q      string `gorm:"index" json:"q"`
 	A      string `json:"a"`
-	Act    int    `json:"act"`
-	Params string `json:"params"`
+	Params string `json:"p"`
 	Saved  int64  `json:"saved"`
 }
 

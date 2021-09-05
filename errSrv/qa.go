@@ -7,7 +7,6 @@ import (
 	xr "github.com/cosmos72/gomacro/xreflect"
 	"math/rand"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,7 +31,7 @@ func eval(s string) ([]xr.Value, error) {
 		"errors",
 	} {
 		if strings.Contains(s, v+".") {
-			ipt = ipt + `import "` + v + `"\n`
+			ipt = ipt + `import "` + v + `"` + "\n"
 		}
 	}
 	var r []xr.Value
@@ -54,27 +53,22 @@ func eval(s string) ([]xr.Value, error) {
 	return r, err
 }
 
-func (q *QATicket) check(s string) (bool, error) {
-	s = fmt.Sprintf("%v", strings.TrimSpace(s))
-	if strings.ContainsAny(s, `"(){}[]\n|&*`+"`") {
-		return false, nil
-	}
-	a := q.A
+func getAnswer(a string) (string, error) {
 	if strings.HasPrefix(a, "func(") {
-		res, er := eval(`func r(answer string){` + a + `}\n run("` + s + `")"`)
+		res, er := eval(`func run(){` + a + "\nrun()")
 		if er != nil {
-			return false, er
+			return "", er
 		}
-		return res[0].Bool(), nil
+		return fmt.Sprintf("%v", res[0].ReflectValue()), nil
 	} else {
 		if strings.ContainsAny(a, "+-*/()") {
 			res, er := eval(a)
 			if er != nil {
-				return false, er
+				return "", er
 			}
-			return s == fmt.Sprintf("%v", res[0].ReflectValue()), nil
+			return fmt.Sprintf("%v", res[0].ReflectValue()), nil
 		} else {
-			return s == a, nil
+			return a, nil
 		}
 	}
 }
@@ -105,33 +99,29 @@ var qaCache []Qa
 
 var qaClients []*QAClient
 
-func (qa *Qa) build() *QATicket {
+func (qa *Qa) build() (*QATicket, error) {
 	q := qa.Q
 	a := qa.A
-	r := regexp.MustCompile("(%[dsvi])").FindAllStringIndex(q, -1)
-	r1 := regexp.MustCompile("(%[dsvi])").FindAllStringIndex(qa.A, -1)
 	s := strings.Split(qa.Params, ",")
-	l := len(s) / 2
-	p := make([]interface{}, l)
+	l := len(s) / 3
 	for i := 0; i < l; i++ {
-		mi, _ := strconv.Atoi(s[i*2])
-		ma, _ := strconv.Atoi(s[i*2+1])
-		v := mi + rand.Intn(ma-mi)
-		p[i] = v
+		k := s[i*3]
+		mi, _ := strconv.Atoi(s[i*3+1])
+		ma, _ := strconv.Atoi(s[i*3+2])
+		v := strconv.FormatInt(int64(mi+rand.Intn(ma-mi)), 10)
+		rs := `{` + k + `}`
+		q = strings.ReplaceAll(q, rs, v)
+		a = strings.ReplaceAll(a, rs, v)
 	}
-	if l0 := len(r); l0 > 0 {
-		p0 := p[:l0]
-		q = fmt.Sprintf(q, p0...)
+	as, er := getAnswer(a)
+	if er == nil {
+		return &QATicket{
+			Q:      q,
+			A:      as,
+			expire: now() + qaLife,
+		}, nil
 	}
-	if l1 := len(r1); l1 > 0 {
-		p1 := p[:l1]
-		a = fmt.Sprintf(qa.A, p1...)
-	}
-	return &QATicket{
-		Q:      q,
-		A:      a,
-		expire: now() + qaLife,
-	}
+	return nil, errors.New(er.Error() + "\n" + a)
 }
 
 func randKey() string {
@@ -156,7 +146,7 @@ func getQaCli(ip string) *QAClient {
 	}
 	return c
 }
-func randQa() *QATicket {
+func randQa() (*QATicket, error) {
 	l := len(qaCache)
 	return qaCache[rand.Intn(l)].build()
 }
@@ -194,7 +184,10 @@ func (c *QAClient) getQA(k string) (string, *QATicket, int64) {
 	delete(c.qs, k)
 	c.tick = c.tick - 1
 	k = randKey()
-	q := randQa()
+	q, e := randQa()
+	if e != nil {
+		return e.Error(), nil, -1
+	}
 	c.qs[k] = q
 	c.expire = now() + cliLife
 	return k, q, 0
@@ -203,8 +196,7 @@ func (c *QAClient) getQA(k string) (string, *QATicket, int64) {
 func (c *QAClient) checkA(k string, a string) (string, *QATicket, int64) {
 	if a != "" {
 		if _a, ok := c.qs[k]; ok {
-			pass, _ := _a.check(a)
-			if pass {
+			if _a.A == a {
 				delete(c.qs, k)
 				return "", nil, 0
 			}

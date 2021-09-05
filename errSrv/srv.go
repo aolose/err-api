@@ -78,7 +78,7 @@ func handleErr(ctx iris.Context, err error) {
 	} else {
 		_ = fmt.Errorf("%v", err)
 		ctx.StatusCode(500)
-		_, _ = ctx.JSON(err)
+		_, _ = ctx.WriteString(err.Error())
 	}
 }
 
