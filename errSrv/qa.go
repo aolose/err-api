@@ -22,6 +22,19 @@ type QATicket struct {
 
 func eval(s string) ([]xr.Value, error) {
 	wa := sync.WaitGroup{}
+	ipt := ""
+	for _, v := range []string{
+		"regexp",
+		"strconv",
+		"strings",
+		"time",
+		"fmt",
+		"errors",
+	} {
+		if strings.Contains(s, v+".") {
+			ipt = ipt + `import "` + v + `"\n`
+		}
+	}
 	var r []xr.Value
 	var err error
 	wa.Add(1)
@@ -35,16 +48,20 @@ func eval(s string) ([]xr.Value, error) {
 			wa.Done()
 		}()
 		vm := fast.New()
-		r, _ = vm.Eval(s)
+		r, _ = vm.Eval(ipt + s)
 	}()
 	wa.Wait()
 	return r, err
 }
 
 func (q *QATicket) check(s string) (bool, error) {
+	s = fmt.Sprintf("%v", strings.TrimSpace(s))
+	if strings.ContainsAny(s, `"(){}[]\n|&*`+"`") {
+		return false, nil
+	}
 	a := q.A
 	if strings.HasPrefix(a, "func(") {
-		res, er := eval(`func r(answer string){` + a + `}\n run("` + a + `")"`)
+		res, er := eval(`func r(answer string){` + a + `}\n run("` + s + `")"`)
 		if er != nil {
 			return false, er
 		}
@@ -55,7 +72,7 @@ func (q *QATicket) check(s string) (bool, error) {
 			if er != nil {
 				return false, er
 			}
-			return a == fmt.Sprintf("%v", res[0].ReflectValue()), nil
+			return s == fmt.Sprintf("%v", res[0].ReflectValue()), nil
 		} else {
 			return s == a, nil
 		}
@@ -89,7 +106,6 @@ var qaCache []Qa
 var qaClients []*QAClient
 
 func (qa *Qa) build() *QATicket {
-	// todo check
 	q := qa.Q
 	a := qa.A
 	r := regexp.MustCompile("(%[dsvi])").FindAllStringIndex(q, -1)
