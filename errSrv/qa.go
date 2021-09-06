@@ -13,6 +13,13 @@ import (
 	"time"
 )
 
+const (
+	cliLife  = 60 * 60 * 3 // 3h
+	qaLife   = 60 * 2      // 2 min
+	tryTimes = 1
+	ticks    = 10
+)
+
 type QATicket struct {
 	Q      string `gorm:"index" json:"q"`
 	A      string
@@ -61,7 +68,7 @@ func getAnswer(a string) (string, error) {
 		}
 		return fmt.Sprintf("%v", res[0].ReflectValue()), nil
 	} else {
-		if strings.ContainsAny(a, "+-*/()") {
+		if strings.ContainsAny(a, `"+-*/()`) {
 			res, er := eval(a)
 			if er != nil {
 				return "", er
@@ -74,6 +81,7 @@ func getAnswer(a string) (string, error) {
 }
 
 type QAClient struct {
+	tryTimes     int64
 	delay        int64
 	tick         int
 	nextTickTime int64
@@ -81,9 +89,6 @@ type QAClient struct {
 	expire       int64
 	qs           map[string]*QATicket
 }
-
-const cliLife = 60 * 60 * 3 // 3h
-const qaLife = 60 * 2       // 2 min
 
 func now() int64 {
 	return time.Now().Unix()
@@ -108,7 +113,15 @@ func (qa *Qa) build() (*QATicket, error) {
 		k := s[i*3]
 		mi, _ := strconv.Atoi(s[i*3+1])
 		ma, _ := strconv.Atoi(s[i*3+2])
-		v := strconv.FormatInt(int64(mi+rand.Intn(ma-mi)), 10)
+		vv := int64(mi)
+		if mi != ma {
+			c := int64(1)
+			if mi > ma {
+				c = -1
+			}
+			vv = c * (vv + rand.Int63n(int64(ma-mi)*c))
+		}
+		v := strconv.FormatInt(vv, 10)
 		rs := `{` + k + `}`
 		q = strings.ReplaceAll(q, rs, v)
 		a = strings.ReplaceAll(a, rs, v)
@@ -131,11 +144,12 @@ func randKey() string {
 func getQaCli(ip string) *QAClient {
 	l := len(qaClients)
 	c := &QAClient{
-		tick:   10,
-		delay:  qaLife,
-		ip:     ip,
-		expire: now() + cliLife,
-		qs:     make(map[string]*QATicket),
+		tryTimes: tryTimes,
+		tick:     ticks,
+		delay:    qaLife,
+		ip:       ip,
+		expire:   now() + cliLife,
+		qs:       make(map[string]*QATicket),
 	}
 	for i := 0; i < l; i++ {
 		cli := qaClients[i]
@@ -151,58 +165,58 @@ func randQa() (*QATicket, error) {
 	return qaCache[rand.Intn(l)].build()
 }
 
-func (c *QAClient) getWaitTime() int64 {
-	if c.tick == 0 {
+func (cli *QAClient) getWaitTime() int64 {
+	if cli.tick == 0 {
 		n := now()
-		if c.nextTickTime > n {
-			return n - c.nextTickTime
+		if cli.nextTickTime > n {
+			return n - cli.nextTickTime
 		}
 	}
 	return 0
 }
 
-func (c *QAClient) getQA(k string) (string, *QATicket, int64) {
-	if c.tick == 10 {
-		c.nextTickTime = now() + c.delay
-	} else if c.tick == 0 {
+func (cli *QAClient) getQA(k string) (string, *QATicket, int64) {
+	if cli.tick == ticks {
+		cli.nextTickTime = now() + cli.delay
+	} else if cli.tick == 0 {
 		n := now()
-		if c.nextTickTime > c.expire {
+		if cli.nextTickTime > cli.expire {
 			bm.add(BlackList{
-				IP:   c.ip,
+				IP:   cli.ip,
 				Type: BkLogin,
 			})
-			c.expire = 0
+			cli.expire = 0
 			cleanQA()
 			return "", nil, -1
 		}
-		if c.nextTickTime > n {
-			return "", nil, n - c.nextTickTime
+		if cli.nextTickTime > n {
+			return "", nil, n - cli.nextTickTime
 		}
-		c.delay = c.delay * 2
-		c.tick = 10
+		cli.delay = cli.delay * 2
+		cli.tick = ticks
 	}
-	delete(c.qs, k)
-	c.tick = c.tick - 1
+	delete(cli.qs, k)
+	cli.tick = cli.tick - 1
 	k = randKey()
 	q, e := randQa()
 	if e != nil {
 		return e.Error(), nil, -1
 	}
-	c.qs[k] = q
-	c.expire = now() + cliLife
+	cli.qs[k] = q
+	cli.expire = now() + cliLife
 	return k, q, 0
 }
 
-func (c *QAClient) checkA(k string, a string) (string, *QATicket, int64) {
+func (cli *QAClient) checkA(k string, a string) (string, *QATicket, int64) {
 	if a != "" {
-		if _a, ok := c.qs[k]; ok {
+		if _a, ok := cli.qs[k]; ok {
 			if _a.A == a {
-				delete(c.qs, k)
+				delete(cli.qs, k)
 				return "", nil, 0
 			}
 		}
 	}
-	return c.getQA(k)
+	return cli.getQA(k)
 }
 
 var nextQaClean = int64(0)

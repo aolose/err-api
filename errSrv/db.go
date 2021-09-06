@@ -95,7 +95,7 @@ type ListResult struct {
 	Cur   int         `json:"cur"`
 }
 
-func pageQuery(table string, total *int64, field ...string) func(ctx iris.Context) {
+func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.Context) {
 	return auth(func(ctx iris.Context) {
 		page := ctx.Params().GetIntDefault("page", 1)
 		count := ctx.URLParamIntDefault("count", 20)
@@ -121,8 +121,8 @@ func pageQuery(table string, total *int64, field ...string) func(ctx iris.Contex
 			}
 		}
 		var c int64
-		tx := db.Table(table)
-		tx1 := db.Table(table).Offset((page - 1) * count).Limit(count)
+		tx := db.Model(table)
+		tx1 := db.Model(table).Offset((page - 1) * count).Limit(count)
 		if noQ && total != nil {
 			c = *total
 		} else {
@@ -133,17 +133,27 @@ func pageQuery(table string, total *int64, field ...string) func(ctx iris.Contex
 			}
 			tx.Count(&c)
 		}
-		bl := make([]BlackList, 0)
-		err := tx.Order("saved desc").Find(&bl).Error
+		tx = tx.Order("saved desc")
+		re := &ListResult{
+			Cur:   page,
+			Total: (int(c) + count - 1) / count,
+		}
+		var err error
+		switch table.(type) {
+		case Qa:
+			res := make([]Qa, 0)
+			err = tx.Find(&res).Error
+			re.List = res
+		case BlackList:
+			res := make([]BlackList, 0)
+			err = tx.Find(&res).Error
+			re.List = res
+		}
 		if err != nil {
 			handleErr(ctx, err)
 		} else {
 			ctx.StatusCode(200)
-			_, _ = ctx.JSON(ListResult{
-				List:  bl,
-				Cur:   page,
-				Total: (int(c) + count - 1) / count,
-			})
+			_, _ = ctx.JSON(re)
 		}
 	})
 }

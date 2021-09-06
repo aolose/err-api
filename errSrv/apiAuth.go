@@ -4,6 +4,28 @@ import (
 	"github.com/kataras/iris/v12"
 )
 
+type NewTick struct {
+	Msg      string `json:"m"`
+	Wait     int64  `json:"w"`
+	Key      string `json:"k"`
+	Question string `json:"q"`
+}
+
+func (cli *QAClient) passed(ctx iris.Context, key, aws, msg string) bool {
+	k, q, t := cli.checkA(key, aws)
+	if q != nil {
+		ctx.StatusCode(403)
+		ctx.JSON(NewTick{
+			Msg:      msg,
+			Wait:     t,
+			Key:      k,
+			Question: q.Q,
+		})
+		return false
+	}
+	return true
+}
+
 func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 	return func(ctx iris.Context) {
 		pass := false
@@ -13,13 +35,27 @@ func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 				s := string(b)
 				if len(s) > 10 {
 					if s[0] == '_' {
-						usr, pwd, er := upk(s)
+						usr, pwd, key, aws, er := upk(s)
+						cli := getQaCli(getIP(ctx))
 						if er == nil {
+							if cli.tryTimes < 0 {
+								if cli.passed(ctx, key, aws, "incorrect") {
+									return
+								}
+							}
 							if sys.Admin == usr && sys.Pwd == pwd {
 								pass = true
 								ctx.StatusCode(200)
 								_, _ = ctx.WriteString(newTk())
+							} else {
+								cli.tryTimes = cli.tryTimes - 1
+								if cli.tryTimes < 1 {
+									cli.passed(ctx, key, "", "auth fail")
+									return
+								}
 							}
+						} else {
+							err = er
 						}
 					} else {
 						if len(sys.Token) > 20 && sys.Token == s {

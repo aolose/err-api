@@ -138,12 +138,16 @@ type ListPost struct {
 
 var tagsCache = map[string][]uint{}
 
+type RQA struct {
+	ID    uint   `gorm:"primarykey" json:"id"`
+	Q     string `gorm:"index" json:"q"`
+	A     string `json:"a"`
+	Saved int64  `json:"saved"`
+}
+
 type Qa struct {
-	ID     uint   `gorm:"primarykey" json:"id"`
-	Q      string `gorm:"index" json:"q"`
-	A      string `json:"a"`
+	RQA
 	Params string `json:"p"`
-	Saved  int64  `json:"saved"`
 }
 
 type System struct {

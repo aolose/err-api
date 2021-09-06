@@ -12,7 +12,7 @@ func initBlackList(app *iris.Application) {
 	blackCache = &BlCAche{}
 	blackCache.load()
 	bk := app.Party("/bk")
-	bk.Get("/", pageQuery("black_lists", &totalBL, "ip", "tp"))
+	bk.Get("/", pageQuery(BlackList{}, &totalBL, "ip", "tp"))
 	bk.Post("/", bkSave)
 	bk.Delete("/{id}", bkDel)
 }

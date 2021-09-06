@@ -97,22 +97,24 @@ func newTk() string {
 	return tk
 }
 
-func upk(s string) (string, string, error) {
+func upk(s string) (string, string, string, string, error) {
 	s = s[1:]
 	st, er := dec(s)
 	if er == nil {
 		v := strings.Split(st, "\u0001")
-		if len(v) == 2 && len(v[0]) > 2 && len(v[1]) > 3 {
+		if len(v) == 4 && len(v[0]) > 2 && len(v[1]) > 3 {
 			v0, e0 := dec(v[0])
 			v1, e1 := dec(v[1])
-			if e0 == nil && e1 == nil {
-				return v0, v1, nil
+			v2, e2 := dec(v[2])
+			v3, e3 := dec(v[3])
+			if e0 == nil && e1 == nil && e2 == nil && e3 == nil {
+				return v0, v1, v2, v3, nil
 			}
 		} else {
 			er = errors.New("wrong text")
 		}
 	}
-	return "", "", er
+	return "", "", "", "", er
 }
 
 func authFail(ctx iris.Context) {
