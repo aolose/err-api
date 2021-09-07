@@ -13,14 +13,17 @@ type NewTick struct {
 
 func (cli *QAClient) passed(ctx iris.Context, key, aws, msg string) bool {
 	k, q, t := cli.checkA(key, aws)
-	if q != nil {
+	if k != "" || t != 0 {
 		ctx.StatusCode(403)
-		ctx.JSON(NewTick{
-			Msg:      msg,
-			Wait:     t,
-			Key:      k,
-			Question: q.Q,
-		})
+		tk := &NewTick{
+			Msg:  msg,
+			Wait: t,
+			Key:  k,
+		}
+		if q != nil {
+			tk.Question = q.Q
+		}
+		ctx.JSON(tk)
 		return false
 	}
 	return true
@@ -38,8 +41,8 @@ func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 						usr, pwd, key, aws, er := upk(s)
 						cli := getQaCli(getIP(ctx))
 						if er == nil {
-							if cli.tryTimes < 0 {
-								if cli.passed(ctx, key, aws, "incorrect") {
+							if cli.tryTimes < 1 {
+								if !cli.passed(ctx, key, aws, "incorrect") {
 									return
 								}
 							}

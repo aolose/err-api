@@ -6,7 +6,6 @@ import (
 	"github.com/cosmos72/gomacro/fast"
 	xr "github.com/cosmos72/gomacro/xreflect"
 	"math/rand"
-	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,10 +13,10 @@ import (
 )
 
 const (
-	cliLife  = 60 * 60 * 3 // 3h
-	qaLife   = 60 * 2      // 2 min
+	cliLife  = 10 * 2 * 3 // 3h
+	qaLife   = 10 * 2     // 2 min
 	tryTimes = 1
-	ticks    = 10
+	ticks    = 1
 )
 
 type QATicket struct {
@@ -94,12 +93,6 @@ func now() int64 {
 	return time.Now().Unix()
 }
 
-func RunGomacro(toeval string) reflect.Value {
-	interp := fast.New()
-	vals, _ := interp.Eval(toeval)
-	return vals[0].ReflectValue()
-}
-
 var qaCache []Qa
 
 var qaClients []*QAClient
@@ -154,10 +147,10 @@ func getQaCli(ip string) *QAClient {
 	for i := 0; i < l; i++ {
 		cli := qaClients[i]
 		if cli.ip == ip {
-			c = cli
-			break
+			return cli
 		}
 	}
+	qaClients = append(qaClients, c)
 	return c
 }
 func randQa() (*QATicket, error) {
@@ -176,9 +169,7 @@ func (cli *QAClient) getWaitTime() int64 {
 }
 
 func (cli *QAClient) getQA(k string) (string, *QATicket, int64) {
-	if cli.tick == ticks {
-		cli.nextTickTime = now() + cli.delay
-	} else if cli.tick == 0 {
+	if cli.tick == 0 {
 		n := now()
 		if cli.nextTickTime > cli.expire {
 			bm.add(BlackList{
@@ -190,13 +181,17 @@ func (cli *QAClient) getQA(k string) (string, *QATicket, int64) {
 			return "", nil, -1
 		}
 		if cli.nextTickTime > n {
-			return "", nil, n - cli.nextTickTime
+			return "", nil, cli.nextTickTime - n
 		}
 		cli.delay = cli.delay * 2
 		cli.tick = ticks
+	} else {
+		if cli.tick == ticks {
+			cli.nextTickTime = now() + cli.delay
+		}
+		cli.tick = cli.tick - 1
 	}
 	delete(cli.qs, k)
-	cli.tick = cli.tick - 1
 	k = randKey()
 	q, e := randQa()
 	if e != nil {
