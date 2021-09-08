@@ -7,6 +7,26 @@ import (
 	"strings"
 )
 
+type ArtVisitDetail struct {
+	ID    uint   `gorm:"primarykey" json:"id"`
+	Ip    string `gorm:"index`
+	Aid   uint   `gorm:"index`
+	Date  uint   `gorm:"index`
+	Count int
+}
+
+func visitRec(art *Art, ip string) {
+	da := uint(now() / 3600 / 24)
+	a := &ArtVisitDetail{
+		Aid:  art.ID,
+		Ip:   ip,
+		Date: da,
+	}
+	db.Where(a).FirstOrCreate(a)
+	db.Model(a).Update("count", a.Count+1)
+	db.Model(art).Update("read", art.Read+1)
+}
+
 type BlCAche struct {
 	idx []int
 	ips [][]string
@@ -201,11 +221,12 @@ type PubLisArt struct {
 }
 
 type PubArt struct {
+	Read         int    `json:"rd"`
 	PubContent   string `json:"pubCont"`
 	AuthorID     uint   `json:"-"`
 	Author       Author `json:"author"`
 	AllowComment int    `json:"comable"`
-	Pwd          string `json:"-"`
+	Pwd          string `json:"pwd"`
 	Updated      int64  `json:"updated"`
 	Created      int64  `json:"created"`
 	Tags         string `json:"tags"`
@@ -468,4 +489,5 @@ func dbInit() {
 	db.AutoMigrate(&Author{})
 	db.AutoMigrate(&Comment{})
 	db.AutoMigrate(&Guest{})
+	db.AutoMigrate(&ArtVisitDetail{})
 }

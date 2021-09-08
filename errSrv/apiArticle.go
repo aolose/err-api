@@ -79,6 +79,10 @@ func getPost(ctx iris.Context) {
 	if err == nil {
 		pp := p.PubArt
 		ctx.JSON(pp)
+		ip := getIP(ctx)
+		addJob(func() {
+			visitRec(p, ip)
+		})
 	} else {
 		handleErr(ctx, err)
 	}
