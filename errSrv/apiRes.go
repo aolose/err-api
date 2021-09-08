@@ -102,16 +102,27 @@ func wait(fn ...func()) {
 func resLs(ctx iris.Context) {
 	pg := ctx.Params().GetIntDefault("page", 1)
 	count := ctx.URLParamIntDefault("c", 20)
+	img := ctx.URLParamIntDefault("img", 0)
 	search := ctx.URLParam("k")
 	var c int64
 	t := sys.TotalRes
 	ls := make([]Res, 0)
 	tx := db.Offset((pg - 1) * count).Limit(count)
-	if search != "" {
+	if search != "" || img != 0 {
 		v := "%" + search + "%"
 		q := "name Like ? OR type Like ?"
-		tx = tx.Where(q, v, v)
-		db.Table("res").Where(q, v, v).Count(&c)
+		if search == "" {
+			q = "type like ?"
+			tx = tx.Where(q, "image%")
+			db.Table("res").Where(q, "image%").Count(&c)
+		} else if img != 0 {
+			q = q + "name Like ? And  type like ?"
+			tx = tx.Where(q, v, "image%")
+			db.Table("res").Where(q, v, "image%").Count(&c)
+		} else {
+			tx = tx.Where(q, v, v)
+			db.Table("res").Where(q, v, v).Count(&c)
+		}
 		t = int(c)
 	}
 	err := tx.Order("date desc").Find(&ls).Error
