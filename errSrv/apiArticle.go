@@ -2,6 +2,7 @@ package errSrv
 
 import (
 	"github.com/kataras/iris/v12"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -33,15 +34,27 @@ func getPosst(ctx iris.Context) {
 	if count == 0 {
 		count = 5
 	}
-	p := []PubLisArt{}
+	p := make([]PubLisArt, 0)
 	db.Model(&Art{}).Offset((page-1)*count).
-		Limit(count).Where("arts.version != ?", -1).Take(&p)
+		Limit(count).Where("arts.version != ?", -1).Find(&p)
+	for i, a := range p {
+		a.Content = fixContent(a.Content)
+		p[i] = a
+	}
 	ls := &ListPubPost{
 		Posts: p,
 		Total: (sys.TotalPubPosts + count - 1) / count,
 		Cur:   page,
 	}
 	ctx.JSON(ls)
+}
+
+func fixContent(c string) string {
+	c = strings.ReplaceAll(c, "\n", "")
+	c = regexp.MustCompile("!?\\[.*?]").ReplaceAllString(c, "")
+	c = regexp.MustCompile("!?\\(.*?\\)").ReplaceAllString(c, "")
+	c = regexp.MustCompile("!?```.*?```").ReplaceAllString(c, "")
+	return c
 }
 
 func getEdits(ctx iris.Context) {
@@ -75,7 +88,8 @@ func getEdits(ctx iris.Context) {
 
 func getPost(ctx iris.Context) {
 	p := &Art{}
-	err := db.Preload("Author").First(p, "slug = ?", ctx.Params().Get("slug")).Error
+	err := db.Preload("Author").
+		First(p, "slug = ?", ctx.Params().Get("slug")).Error
 	if err == nil {
 		pp := p.PubArt
 		ctx.JSON(pp)

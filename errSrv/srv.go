@@ -62,6 +62,7 @@ func Run(addr string) {
 	app.Post("/auth", auth(nil))
 	app.Get("/ot", auth(func(ctx iris.Context) {
 		sys.Token = ""
+		ctx.StatusCode(200)
 	}))
 	initArtApi(app)
 	initTagsApi(app)

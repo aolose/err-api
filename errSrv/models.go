@@ -215,9 +215,10 @@ type Comment struct {
 type PubLisArt struct {
 	Banner   string `json:"banner"`
 	Desc     string `json:"desc"`
-	PubTitle string `json:"pubTitle"`
+	PubTitle string `json:"title"`
 	Slug     string `json:"slug" gorm:"not null;index"`
 	Content  string `json:"content" grom:"-"`
+	Updated  int64  `json:"updated"`
 }
 
 type PubArt struct {
@@ -225,9 +226,8 @@ type PubArt struct {
 	PubContent   string `json:"pubCont"`
 	AuthorID     uint   `json:"-"`
 	Author       Author `json:"author"`
-	AllowComment int    `json:"comable"`
+	AllowComment int    `json:"cm"`
 	Pwd          string `json:"pwd"`
-	Updated      int64  `json:"updated"`
 	Created      int64  `json:"created"`
 	Tags         string `json:"tags"`
 	PubLisArt
@@ -360,7 +360,7 @@ func (p *Art) Publish() error {
 	} else {
 		p.Slug = slug(p.Title)
 	}
-	c := slugCount(p.Slug, 0)
+	c := slugCount(p.Slug, p.ID)
 	if c > 0 {
 		if c > 99 {
 			c = 99 + rand.Int63n(10000)
