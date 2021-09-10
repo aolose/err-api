@@ -39,18 +39,21 @@ func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 				if len(s) > 10 {
 					if s[0] == '_' {
 						usr, pwd, key, aws, er := upk(s)
-						cli := getQaCli(getIP(ctx))
+						var cli *QAClient
 						if er == nil {
-							if cli.tryTimes < 1 {
-								if !cli.passed(ctx, key, aws, "incorrect") {
-									return
+							if l := len(qaCache); l > 0 {
+								cli = getQaCli(getIP(ctx))
+								if cli.tryTimes < 1 {
+									if !cli.passed(ctx, key, aws, "incorrect") {
+										return
+									}
 								}
 							}
 							if sys.Admin == usr && sys.Pwd == pwd {
 								pass = true
 								ctx.StatusCode(200)
 								_, _ = ctx.WriteString(newTk())
-							} else {
+							} else if cli != nil {
 								cli.tryTimes = cli.tryTimes - 1
 								if cli.tryTimes < 1 {
 									cli.passed(ctx, key, "", "auth fail")

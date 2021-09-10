@@ -64,6 +64,7 @@ func Run(addr string) {
 		sys.Token = ""
 		ctx.StatusCode(200)
 	}))
+	initSettingApi(app)
 	initArtApi(app)
 	initTagsApi(app)
 	initResApi(app)
