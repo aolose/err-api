@@ -36,7 +36,9 @@ func getPosst(ctx iris.Context) {
 	}
 	p := make([]PubLisArt, 0)
 	db.Model(&Art{}).Offset((page-1)*count).
-		Limit(count).Where("arts.version != ?", -1).Find(&p)
+		Limit(count).Where("arts.version != ?", -1).
+		Order("updated desc, created desc").
+		Find(&p)
 	for i, a := range p {
 		a.Content = fixContent(a.Content)
 		p[i] = a
