@@ -171,15 +171,15 @@ type Qa struct {
 }
 
 type System struct {
-	ID            uint
-	Admin         string
-	Pwd           string
-	LoginProtect  bool
-	CommentQA     bool
-	Token         string `gorm:"-"`
-	TotalPubPosts int    `gorm:"-"`
-	TotalPosts    int    `gorm:"-"`
-	TotalRes      int    `gorm:"-"`
+	ID            uint   `json:"-"`
+	Admin         string `json:"usr"`
+	Pwd           string `json:"pwd"`
+	LoginProtect  bool   `json:"qal"`
+	CommentQA     bool   `json:"qac"`
+	Token         string `gorm:"-" json:"-"`
+	TotalPubPosts int    `gorm:"-" json:"-"`
+	TotalPosts    int    `gorm:"-" json:"-"`
+	TotalRes      int    `gorm:"-" json:"-"`
 }
 
 type Res struct {

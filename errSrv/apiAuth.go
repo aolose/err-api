@@ -41,7 +41,7 @@ func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 						usr, pwd, key, aws, er := upk(s)
 						var cli *QAClient
 						if er == nil {
-							if l := len(qaCache); l > 0 {
+							if l := len(qaCache); sys.LoginProtect && l > 0 {
 								cli = getQaCli(getIP(ctx))
 								if cli.tryTimes < 1 {
 									if !cli.passed(ctx, key, aws, "incorrect") {
