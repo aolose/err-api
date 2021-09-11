@@ -73,7 +73,7 @@ func countRes() {
 func syncSys() {
 	if sys.Admin == "" {
 		sys.Admin = "admin"
-		sys.Pwd = "admin"
+		sys.Pwd = md5Enc("admin")
 	}
 	db.Save(sys)
 }

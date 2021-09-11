@@ -17,7 +17,7 @@ func setAcc(ctx iris.Context) {
 		} else {
 			err = db.Model(sys).Updates(System{
 				Admin: usr,
-				Pwd:   pwd,
+				Pwd:   md5Enc(pwd),
 			}).Error
 		}
 	}

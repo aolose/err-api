@@ -49,7 +49,7 @@ func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 									}
 								}
 							}
-							if sys.Admin == usr && sys.Pwd == pwd {
+							if sys.Admin == usr && sys.Pwd == md5Enc(pwd) {
 								pass = true
 								ctx.StatusCode(200)
 								_, _ = ctx.WriteString(newTk())
