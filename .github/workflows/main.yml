@@ -17,6 +17,8 @@ jobs:
        
       - name: go mod
         run: |  
+          pwd
+          ls -al
           go mod tidy
           
       - name: Build
