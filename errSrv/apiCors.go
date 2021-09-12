@@ -36,14 +36,21 @@ func allowCors(app *iris.Application) {
 					)
 				}
 			}
-			ctx.Header("Access-Control-Allow-Origin", r.Header.Get("origin"))
-			ctx.Header("Access-Control-Allow-Credentials", "true")
-			if ctx.Method() == iris.MethodOptions {
-				ctx.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS")
-				ctx.Header("Access-Control-Max-Age", "86400")
-				ctx.StatusCode(204)
+
+			origin := r.Header.Get("origin")
+			ua := r.Header.Get("User-agent")
+			if origin == "https://www.err.com" || ua == "node-fetch" || origin == "http://localhost:3000" || origin == "http://127.0.0.1:3000" {
+				ctx.Header("Access-Control-Allow-Origin", origin)
+				ctx.Header("Access-Control-Allow-Credentials", "true")
+				if ctx.Method() == iris.MethodOptions {
+					ctx.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS")
+					ctx.Header("Access-Control-Max-Age", "86400")
+					ctx.StatusCode(204)
+				} else {
+					ctx.Next()
+				}
 			} else {
-				ctx.Next()
+				ctx.StatusCode(403)
 			}
 		}
 	})
