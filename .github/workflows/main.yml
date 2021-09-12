@@ -17,13 +17,11 @@ jobs:
        
       - name: go mod
         run: |  
-          pwd
-          ls -al
           go mod tidy
           
       - name: Build
         run: |
-         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o release/linux/amd64/err .
+         CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -o release/linux/amd64/err .
          
       - name: Upload
         uses: appleboy/scp-action@master
@@ -43,5 +41,7 @@ jobs:
           username: ${{ secrets.VPS_USR }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            whoami
+            sudo -S service err restart << EOF
+            ${{ secrets.VPS_PWD }}
+            EOF
           
