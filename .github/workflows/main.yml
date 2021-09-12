@@ -17,7 +17,7 @@ jobs:
        
       - name: go mod
         run: |  
-          go mod tody
+          go mod tidy
           
       - name: Build
         run: |
