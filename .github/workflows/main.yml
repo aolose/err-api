@@ -1,0 +1,45 @@
+name: Depoly on vultr
+on:
+  push:
+    branches: [ master ]
+jobs:
+ 
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up go
+        uses: actions/setup-go@v2
+        with:  
+          go-version: '^1.16.1'
+      
+      - name: Check out code
+        uses: actions/checkout@v2
+       
+      - name: go mod
+        run: |  
+          go mod tody
+          
+      - name: Build
+        run: |
+         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -a -o release/linux/amd64/err
+         
+      - name: Upload
+        uses: appleboy/scp-action@master
+        with:
+          hosts: ${{ secrets.VPS_ADDR }}
+          key: ${{ secrets.VPS_KEY }}
+          username: ${{ secrets.VPS_USR }}
+          port: ${{ secrets.VPS_PORT }}
+          source: "release/linux/amd64/err"
+          target: "~"
+          
+      - name: Run
+        uses: appleboy/ssh-action@master
+        with:
+          hosts: ${{ secrets.VPS_ADDR }}
+          key: ${{ secrets.VPS_KEY }}
+          username: ${{ secrets.VPS_USR }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            whoami
+          
