@@ -83,6 +83,9 @@ func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 			}
 		} else {
 			ck := ctx.GetCookie("session_id")
+			if ck == "" {
+				ck = ctx.GetHeader("token")
+			}
 			if len(ck) > 10 && ck == sys.Token {
 				pass = true
 			}

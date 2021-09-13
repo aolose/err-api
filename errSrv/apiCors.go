@@ -20,28 +20,35 @@ func allowCors(app *iris.Application) {
 		} else {
 			r := ctx.Request()
 			fmt.Printf("%v \t %v\n", r.Method, r.URL)
+			origin := r.Header.Get("origin")
 			if r.Method == "GET" &&
-				strings.HasPrefix(r.URL.Path, "/r/") &&
-				!strings.HasSuffix(r.URL.Path, ".png") {
-				id := r.URL.Path[3:]
-				re := &Res{ID: id}
-				err := db.First(re).Error
-				if err == nil {
-					m1 := regexp.MustCompile(`^(.*?)\.\w+$`)
-					//Content-Disposition:
-					ctx.Header(
-						"Content-Disposition",
-						" attachment; filename=\""+
-							m1.ReplaceAllString(re.Name, "$1")+"."+re.Ext+"\"",
-					)
+				strings.HasPrefix(r.URL.Path, "/r/") {
+
+				if origin == "" {
+					origin = r.Referer()
+					origin = origin[0 : len(origin)-1]
+				}
+
+				if !strings.HasSuffix(r.URL.Path, ".png") {
+					id := r.URL.Path[3:]
+					re := &Res{ID: id}
+					err := db.First(re).Error
+					if err == nil {
+						m1 := regexp.MustCompile(`^(.*?)\.\w+$`)
+						//Content-Disposition:
+						ctx.Header(
+							"Content-Disposition",
+							" attachment; filename=\""+
+								m1.ReplaceAllString(re.Name, "$1")+"."+re.Ext+"\"",
+						)
+					}
 				}
 			}
-
-			origin := r.Header.Get("origin")
 			ua := r.Header.Get("User-agent")
-			if strings.HasSuffix(origin, ".err.name") || ua == "node-fetch" || origin == "http://localhost:3000" {
+			if origin == "https://www.err.name" || ua == "node-fetch" || origin == "null" || origin == "http://localhost:3000" || origin == "http://www.local.io" {
 				ctx.Header("Access-Control-Allow-Origin", origin)
 				ctx.Header("Access-Control-Allow-Credentials", "true")
+				ctx.Header("Access-Control-Allow-Headers", "token")
 				if ctx.Method() == iris.MethodOptions {
 					ctx.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS")
 					ctx.Header("Access-Control-Max-Age", "86400")
