@@ -201,6 +201,12 @@ func upload(ctx iris.Context) {
 				i = int64(ii) + i
 			}
 			inf, _ := fileInfoCache[key]
+			delete(fileCache, key)
+			delete(fileInfoCache, key)
+			delete(fileFirstCache, key)
+			if strings.HasPrefix(inf[1], "image") {
+				i = int64(thumbnail(f, i))
+			}
 			re := &Res{
 				Name: inf[0],
 				Type: inf[1],
@@ -212,13 +218,7 @@ func upload(ctx iris.Context) {
 			db.Clauses(clause.OnConflict{
 				UpdateAll: true,
 			}).Create(re)
-			delete(fileCache, key)
-			delete(fileInfoCache, key)
-			delete(fileFirstCache, key)
-			if strings.HasPrefix(re.Type, "image") {
-				thumbnail(f)
-			}
-			setMsg(strings.Join([]string{key, pt}, ","))
+			setMsg(strings.Join([]string{key, pt, "", "", strconv.Itoa(int(i))}, ","))
 		})
 	} else {
 		nf := fileInfoCache[key]
@@ -257,32 +257,44 @@ func msg(ctx iris.Context) {
 	}
 }
 
-func compressImg(buf []byte, n, nm string, sm bool) error {
+func compressImg(buf []byte, n, nm string, sm bool, s int64) (error, int) {
 	var img []byte
 	var err error
 	if sm {
-		img, err = bimg.NewImage(buf).Resize(0, 200)
+		buf, _ = bimg.NewImage(buf).Resize(0, 200)
+		img, err = bimg.NewImage(buf).Convert(bimg.WEBP)
 	} else {
+		sz, _ := bimg.NewImage(buf).Size()
+		if sz.Width > 3840 {
+			buf, _ = bimg.NewImage(buf).Resize(3080, 0)
+		}
 		img, err = bimg.NewImage(buf).Convert(bimg.WEBP)
 	}
 	if err == nil {
-		bimg.Write(n+nm, img)
+		log.Printf("compress: before %d after %d \n", s, len(img))
+		if s == 0 || len(img) < int(s) {
+			err = bimg.Write(n+nm, img)
+		} else {
+			return nil, int(s)
+		}
 	}
-	return err
+	return err, len(img)
 }
 
-func thumbnail(f *os.File) {
+func thumbnail(f *os.File, s int64) int {
 	n := f.Name()
 	_ = f.Close()
+	i := 0
 	buffer, err := bimg.Read(n)
 
 	if err == nil {
-		err = compressImg(buffer, n, ".png", true)
+		err, _ = compressImg(buffer, n, ".png", true, 0)
 		if err == nil {
-			err = compressImg(buffer, n, "", false)
+			err, i = compressImg(buffer, n, "", false, s)
 		}
 		if err != nil {
 			log.Printf("thumbnail err %v", err)
 		}
 	}
+	return i
 }
