@@ -39,7 +39,7 @@ func allowCors(app *iris.Application) {
 
 			origin := r.Header.Get("origin")
 			ua := r.Header.Get("User-agent")
-			if origin == "https://www.err.name" || ua == "node-fetch" || origin == "http://localhost:3000" || origin == "http://127.0.0.1:3000" {
+			if strings.HasSuffix(origin, ".err.name") || ua == "node-fetch" || origin == "http://localhost:3000" {
 				ctx.Header("Access-Control-Allow-Origin", origin)
 				ctx.Header("Access-Control-Allow-Credentials", "true")
 				if ctx.Method() == iris.MethodOptions {
