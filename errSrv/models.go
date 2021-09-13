@@ -219,6 +219,7 @@ type PubLisArt struct {
 	Slug     string `json:"slug" gorm:"not null;index"`
 	Content  string `json:"content" grom:"-"`
 	Updated  int64  `json:"updated"`
+	Created  int64  `json:"created"`
 }
 
 type PubArt struct {
@@ -228,7 +229,6 @@ type PubArt struct {
 	Author       Author `json:"author"`
 	AllowComment int    `json:"cm"`
 	Pwd          string `json:"pwd"`
-	Created      int64  `json:"created"`
 	Tags         string `json:"tags"`
 	PubLisArt
 }
