@@ -17,7 +17,7 @@ jobs:
       - name: Install package
         run: |
           sudo apt-get update
-          export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/include:/usr/include/vips
+          export PKG_CONFIG_PATH=/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
           sudo apt-get install pkg-config libvips
           whereis vips
 
