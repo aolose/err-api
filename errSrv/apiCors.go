@@ -45,7 +45,7 @@ func allowCors(app *iris.Application) {
 				}
 			}
 			ua := r.Header.Get("User-agent")
-			if origin == "https://www.err.name" || ua == "node-fetch" || origin == "null" || origin == "http://localhost:3000" || origin == "http://www.local.io" {
+			if origin == "https://www.err.name" || ua == "node-fetch" || origin == "null" || origin == "http://localhost:3000" {
 				ctx.Header("Access-Control-Allow-Origin", origin)
 				ctx.Header("Access-Control-Allow-Credentials", "true")
 				ctx.Header("Access-Control-Allow-Headers", "token")
