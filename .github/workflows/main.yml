@@ -17,8 +17,9 @@ jobs:
       - name: Install package
         run: |
           sudo apt-get update
+          export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/include:/usr/include/vips
           sudo apt-get install pkg-config libvips
-          export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/include
+          whereis vips
 
       - name: Go mod
         run: |
