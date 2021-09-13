@@ -15,14 +15,11 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - name: go mod
-        run: |
-          go mod tidy
-
       - name: Build
         run: |
          sudo apt-get update -y
          sudo apt-get install -y libvips
+         go mod tidy
          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -v -o release/linux/amd64/err .
          
       - name: Upload
