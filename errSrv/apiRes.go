@@ -2,7 +2,7 @@ package errSrv
 
 import (
 	"bytes"
-	"github.com/disintegration/imaging"
+	"github.com/h2non/bimg"
 	"github.com/h2non/filetype"
 	"github.com/kataras/iris/v12"
 	"gorm.io/gorm/clause"
@@ -257,13 +257,30 @@ func msg(ctx iris.Context) {
 	}
 }
 
+func compressImg(buf []byte, n, nm string, sm bool) error {
+	var img []byte
+	var err error
+	if sm {
+		img, err = bimg.NewImage(buf).Resize(0, 200)
+	} else {
+		img, err = bimg.NewImage(buf).Convert(bimg.WEBP)
+	}
+	if err == nil {
+		bimg.Write(n+nm, img)
+	}
+	return err
+}
+
 func thumbnail(f *os.File) {
 	n := f.Name()
 	_ = f.Close()
-	img, err := imaging.Open(n)
+	buffer, err := bimg.Read(n)
+
 	if err == nil {
-		img := imaging.Resize(img, 0, 200, imaging.Lanczos)
-		err = imaging.Save(img, n+".png")
+		err = compressImg(buffer, n, ".png", true)
+		if err == nil {
+			err = compressImg(buffer, n, "", false)
+		}
 		if err != nil {
 			log.Printf("thumbnail err %v", err)
 		}
