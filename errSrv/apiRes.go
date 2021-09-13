@@ -2,6 +2,7 @@ package errSrv
 
 import (
 	"bytes"
+	"github.com/discord/lilliput"
 	"github.com/h2non/bimg"
 	"github.com/h2non/filetype"
 	"github.com/kataras/iris/v12"
@@ -77,7 +78,7 @@ func resDel(ctx iris.Context) {
 		addJob(func() {
 			for _, i := range ids {
 				er := os.Remove("./dist/" + i)
-				_ = os.Remove("./dist/" + i + ".png")
+				_ = os.Remove("./dist/" + i + ".webp")
 				if er != nil {
 					log.Printf("del %s file fail: %v \n", i, er)
 				}
@@ -260,15 +261,26 @@ func msg(ctx iris.Context) {
 func compressImg(buf []byte, n, nm string, sm bool, s int64) (error, int) {
 	var img []byte
 	var err error
+	ops := lilliput.NewImageOps(8192)
+	outputImg := make([]byte, len(buf)*2)
+	defer ops.Close()
 	if sm {
-		buf, _ = bimg.NewImage(buf).Resize(0, 200)
-		img, err = bimg.NewImage(buf).Convert(bimg.WEBP)
-	} else {
-		sz, _ := bimg.NewImage(buf).Size()
-		if sz.Width > 3840 {
-			buf, _ = bimg.NewImage(buf).Resize(3080, 0)
+		dc, _ := lilliput.NewDecoder(buf)
+		opts := &lilliput.ImageOptions{
+			FileType:             "webp",
+			Height:               200,
+			NormalizeOrientation: true,
+			EncodeOptions:        map[int]int{lilliput.WebpQuality: 85},
 		}
-		img, err = bimg.NewImage(buf).Convert(bimg.WEBP)
+		img, err = ops.Transform(dc, opts, outputImg)
+	} else {
+		dc, _ := lilliput.NewDecoder(buf)
+		opts := &lilliput.ImageOptions{
+			FileType:             "webp",
+			NormalizeOrientation: true,
+			EncodeOptions:        map[int]int{lilliput.WebpQuality: 90},
+		}
+		img, err = ops.Transform(dc, opts, outputImg)
 	}
 	if err == nil {
 		log.Printf("compress: before %d after %d \n", s, len(img))
@@ -288,7 +300,7 @@ func thumbnail(f *os.File, s int64) int {
 	buffer, err := bimg.Read(n)
 
 	if err == nil {
-		err, _ = compressImg(buffer, n, ".png", true, 0)
+		err, _ = compressImg(buffer, n, ".webp", true, 0)
 		if err == nil {
 			err, i = compressImg(buffer, n, "", false, s)
 		}

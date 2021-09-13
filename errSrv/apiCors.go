@@ -26,10 +26,12 @@ func allowCors(app *iris.Application) {
 
 				if origin == "" {
 					origin = r.Referer()
-					origin = origin[0 : len(origin)-1]
+					if len(origin) > 0 {
+						origin = origin[0 : len(origin)-1]
+					}
 				}
 
-				if !strings.HasSuffix(r.URL.Path, ".png") {
+				if !strings.HasSuffix(r.URL.Path, ".webp") {
 					id := r.URL.Path[3:]
 					re := &Res{ID: id}
 					err := db.First(re).Error

@@ -6,6 +6,7 @@ require (
 	github.com/Joker/hpp v1.0.0 // indirect
 	github.com/andybalholm/brotli v1.0.2 // indirect
 	github.com/cosmos72/gomacro v0.0.0-20210624153544-b4935e406a41
+	github.com/discord/lilliput v0.0.0-20210720001558-e1547514bd5f
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/h2non/bimg v1.1.5
