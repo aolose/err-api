@@ -17,7 +17,7 @@ jobs:
       - name: Install package
         run: |
           sudo apt-get update
-          sudo apt-get install libvips
+          sudo apt-get install pkg-config libvips
 
       - name: Go mod
         run: |
