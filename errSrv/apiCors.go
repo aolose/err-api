@@ -23,27 +23,27 @@ func allowCors(app *iris.Application) {
 			origin := r.Header.Get("origin")
 			if r.Method == "GET" &&
 				strings.HasPrefix(r.URL.Path, "/r/") {
-
 				if origin == "" {
 					origin = r.Referer()
 					if len(origin) > 0 {
 						origin = origin[0 : len(origin)-1]
 					}
 				}
-
 				if !strings.HasSuffix(r.URL.Path, ".webp") {
 					id := r.URL.Path[3:]
 					re := &Res{ID: id}
 					err := db.First(re).Error
 					if err == nil {
 						m1 := regexp.MustCompile(`^(.*?)\.\w+$`)
-						//Content-Disposition:
 						ctx.Header(
 							"Content-Disposition",
 							" attachment; filename=\""+
 								m1.ReplaceAllString(re.Name, "$1")+"."+re.Ext+"\"",
 						)
 					}
+				} else {
+					ctx.Next()
+					return
 				}
 			}
 			ua := r.Header.Get("User-agent")

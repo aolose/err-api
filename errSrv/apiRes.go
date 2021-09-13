@@ -262,8 +262,8 @@ func compressImg(buf []byte, n, nm string, sm bool, s int64) (error, int) {
 	var err error
 	sz, _ := bimg.NewImage(buf).Size()
 	img, err = bimg.NewImage(buf).Convert(bimg.WEBP)
-	if sm {
-		img, err = bimg.NewImage(img).Resize(0, 200)
+	if sm && sz.Height > 500 {
+		img, err = bimg.NewImage(img).Resize(0, 500)
 	} else {
 		if sz.Width > 3840 {
 			img, _ = bimg.NewImage(img).Resize(3080, 0)
