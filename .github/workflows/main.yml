@@ -18,7 +18,7 @@ jobs:
       - name: install requires
         run: |  
           go mod tidy
-          sudo apt-get install libvips
+          sudo apt-get install -y libvips
           
       - name: Build
         run: |
