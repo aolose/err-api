@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    
+
       - name: Set up go
         uses: actions/setup-go@v2
         with:  
@@ -15,9 +15,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
        
-      - name: go mod
+      - name: install requires
         run: |  
           go mod tidy
+          sudo apt-get install libvips
           
       - name: Build
         run: |
