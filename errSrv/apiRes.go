@@ -2,7 +2,6 @@ package errSrv
 
 import (
 	"bytes"
-	"github.com/discord/lilliput"
 	"github.com/h2non/bimg"
 	"github.com/h2non/filetype"
 	"github.com/kataras/iris/v12"
@@ -261,26 +260,19 @@ func msg(ctx iris.Context) {
 func compressImg(buf []byte, n, nm string, sm bool, s int64) (error, int) {
 	var img []byte
 	var err error
-	ops := lilliput.NewImageOps(8192)
-	outputImg := make([]byte, len(buf)*2)
-	defer ops.Close()
+	sz, _ := bimg.NewImage(buf).Size()
+	img, err = bimg.NewImage(buf).Convert(bimg.WEBP)
 	if sm {
-		dc, _ := lilliput.NewDecoder(buf)
-		opts := &lilliput.ImageOptions{
-			FileType:             "webp",
-			Height:               200,
-			NormalizeOrientation: true,
-			EncodeOptions:        map[int]int{lilliput.WebpQuality: 85},
-		}
-		img, err = ops.Transform(dc, opts, outputImg)
+		img, err = bimg.NewImage(img).Resize(0, 200)
 	} else {
-		dc, _ := lilliput.NewDecoder(buf)
-		opts := &lilliput.ImageOptions{
-			FileType:             "webp",
-			NormalizeOrientation: true,
-			EncodeOptions:        map[int]int{lilliput.WebpQuality: 90},
+		if sz.Width > 3840 {
+			img, _ = bimg.NewImage(img).Resize(3080, 0)
+		} else {
+			tp := bimg.NewImage(buf).Type()
+			if tp == "gif" && err == nil && sz.Width > 500 {
+				img, err = bimg.NewImage(img).Resize(500, 0)
+			}
 		}
-		img, err = ops.Transform(dc, opts, outputImg)
 	}
 	if err == nil {
 		log.Printf("compress: before %d after %d \n", s, len(img))
