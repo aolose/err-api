@@ -286,7 +286,8 @@ func save(p *Art, pub bool) error {
 		if p.OverrideCreate != 0 {
 			p.Created = p.OverrideCreate
 		}
-		return db.Model(p).Save(p).Error
+		db.Model(p).Update("banner", p.Banner)
+		return db.Model(p).Updates(p).Error
 	}
 }
 
