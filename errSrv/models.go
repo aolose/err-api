@@ -441,7 +441,9 @@ loop:
 		nt[a] = Tag{Name: n}
 		a++
 	}
-	err = db.Create(&nt).Error
+	if len(nt) > 0 {
+		err = db.Create(&nt).Error
+	}
 	if err == nil {
 		ta := make([]TagArt, 0)
 		for _, n := range name {
@@ -451,7 +453,9 @@ loop:
 				tagsCache[n] = append(v, id)
 			}
 		}
-		err = db.Create(&ta).Error
+		if len(ta) > 0 {
+			err = db.Create(&ta).Error
+		}
 	}
 	return err
 }
