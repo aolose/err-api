@@ -19,33 +19,43 @@ func allowCors(app *iris.Application) {
 			ctx.WriteString("Access Forbidden!")
 		} else {
 			r := ctx.Request()
-			fmt.Printf("%v \t %v\n", r.Method, r.URL)
 			origin := r.Header.Get("origin")
+			if origin == "" {
+				origin = r.Referer()
+				if len(origin) > 0 {
+					origin = origin[0 : len(origin)-1]
+				}
+			}
+			fmt.Printf("%v \t %v\n", r.Method, r.URL)
 			if r.Method == "GET" &&
 				strings.HasPrefix(r.URL.Path, "/r/") {
-				if origin == "" {
-					origin = r.Referer()
-					if len(origin) > 0 {
-						origin = origin[0 : len(origin)-1]
-					}
-				}
 				if !strings.HasSuffix(r.URL.Path, ".webp") {
 					id := r.URL.Path[3:]
 					re := &Res{ID: id}
 					err := db.First(re).Error
 					if err == nil {
-						m1 := regexp.MustCompile(`^(.*?)\.\w+$`)
-						ctx.Header(
-							"Content-Disposition",
-							" attachment; filename=\""+
-								m1.ReplaceAllString(re.Name, "$1")+"."+re.Ext+"\"",
-						)
+						if strings.Contains(re.Type, "image") {
+							ctx.Header("Content-Type", "image/webp")
+							ctx.Header("Accept-Ranges", "bytes")
+						} else {
+							m1 := regexp.MustCompile(`^(.*?)\.\w+$`)
+							ctx.Header(
+								"Content-Disposition",
+								" attachment; filename=\""+
+									m1.ReplaceAllString(re.Name, "$1")+"."+re.Ext+"\"",
+							)
+						}
+						if origin == "https://www.err.name" || origin == "http://localhost:3000" {
+							ctx.Next()
+							return
+						}
 					}
 				} else {
 					ctx.Next()
 					return
 				}
 			}
+
 			ua := r.Header.Get("User-agent")
 			if origin == "https://www.err.name" || ua == "node-fetch" || origin == "null" || origin == "http://localhost:3000" {
 				ctx.Header("Access-Control-Allow-Origin", origin)
