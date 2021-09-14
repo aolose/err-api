@@ -45,7 +45,7 @@ func allowCors(app *iris.Application) {
 									m1.ReplaceAllString(re.Name, "$1")+"."+re.Ext+"\"",
 							)
 						}
-						if origin == "https://www.err.name" || origin == "http://localhost:3000" {
+						if origin == "https://www.err.name" || origin == "http://localhost:3000" || origin == "" {
 							ctx.Next()
 							return
 						}
