@@ -3,6 +3,7 @@ package errSrv
 import (
 	"fmt"
 	"github.com/kataras/iris/v12"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -21,9 +22,10 @@ func allowCors(app *iris.Application) {
 			r := ctx.Request()
 			origin := r.Header.Get("origin")
 			if origin == "" {
-				origin = r.Referer()
-				if len(origin) > 0 {
-					origin = origin[0 : len(origin)-1]
+				rf := r.Referer()
+				if len(rf) > 10 {
+					u, _ := url.Parse(rf)
+					origin = u.Scheme + "://" + u.Host
 				}
 			}
 			fmt.Printf("%v \t %v\n", r.Method, r.URL)
@@ -45,7 +47,7 @@ func allowCors(app *iris.Application) {
 									m1.ReplaceAllString(re.Name, "$1")+"."+re.Ext+"\"",
 							)
 						}
-						if origin == "https://www.err.name" || origin == "http://localhost:3000" || origin == "" {
+						if origin == "https://www.err.name" || origin == "http://localhost:3000" {
 							ctx.Next()
 							return
 						}
