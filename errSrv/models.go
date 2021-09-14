@@ -245,7 +245,8 @@ type TagArt struct {
 }
 
 type ArtHis struct {
-	AID     uint  ` gorm:"index" json:"id"`
+	ID      uint  `gorm:"primarykey" json:"id"`
+	AID     uint  ` gorm:"index" json:"aid"`
 	Version int64 `gorm:"index" json:"ver"`
 	Content string
 	Title   string
@@ -256,41 +257,43 @@ type Art struct {
 	OverrideUpdate int64  `json:"update2"`
 	OverrideCreate int64  `json:"create2"`
 	OverrideSlug   string `json:"slug2"`
-	Version        int64  `json:"ver"`
 	Content        string `json:"content"`
 	Title          string `json:"title" gorm:"index;not null"`
 	SaveAt         int64  `json:"saved"`
 	PubArt
 }
 
-func (p *Art) SetPublic(pu PubArt) *Art {
-	p.PubArt = pu
-	return p
-}
-
 func save(p *Art, pub bool) error {
-	if !pub {
-		p.PubArt = PubArt{}
-	}
+	var err error
+	o := p
 	n := now()
-	p.SaveAt = n
-	if p.ID == 0 {
-		if p.Created == 0 {
-			p.Created = n
+	if !pub {
+		p = &Art{
+			ID:      p.ID,
+			Content: p.Content,
+			Title:   p.Title,
+			SaveAt:  n,
 		}
-		if p.OverrideCreate != 0 {
-			p.Created = p.OverrideCreate
-		}
-		return db.Create(p).Error
 	} else {
 		if p.OverrideCreate != 0 {
 			p.Created = p.OverrideCreate
 		}
-		if pub {
+		p.OverrideCreate = 0
+	}
+	if p.ID == 0 {
+		if p.Created == 0 {
+			p.Created = n
+		}
+		err = db.Create(p).Error
+	} else {
+		if pub && p.Banner == "" {
 			db.Model(p).Update("banner", p.Banner)
 		}
-		return db.Model(p).Updates(p).Error
+		err = db.Model(p).Updates(p).Error
 	}
+	o.ID = p.ID
+	o.SaveAt = p.SaveAt
+	return err
 }
 
 func (p *Art) Save() error {
@@ -356,13 +359,15 @@ func (p *Art) Publish() error {
 	n := now()
 	p.Updated = n
 	if p.OverrideUpdate != 0 {
-		p.Updated = p.Updated
+		p.Updated = p.OverrideUpdate
 	}
+	p.OverrideUpdate = 0
 	if p.OverrideSlug != "" {
 		p.Slug = p.OverrideSlug
 	} else {
 		p.Slug = slug(p.Title)
 	}
+	p.OverrideSlug = ""
 	c := slugCount(p.Slug, p.ID)
 	if c > 0 {
 		if c > 99 {
@@ -376,21 +381,30 @@ func (p *Art) Publish() error {
 	p.PubContent = p.Content
 	err = save(p, true)
 	if err == nil {
-		if p.Version == -1 {
-			p.Version = n
-			err = db.Model(p).Update("version", n).Error
-		}
-		if err == nil {
-			err = db.Where(ArtHis{
-				AID:     p.ID,
-				Version: p.Version,
-			}).Assign(ArtHis{
-				Content: p.Content,
-				Title:   p.Title,
-			}).FirstOrCreate(&ArtHis{}).Error
-		}
+		err = db.Create(&ArtHis{
+			AID:     p.ID,
+			Content: p.Content,
+			Title:   p.Title,
+			Version: n,
+		}).Error
 	}
+	addJob(cleanArtHis(p.ID))
 	return err
+}
+
+func cleanArtHis(id uint) func() {
+	return func() {
+		ars := make([]ArtHis, 0)
+		db.Select("id", "a_id", "version").
+			Where("a_id = ?", id).
+			Order("version desc").
+			Limit(10).Find(&ars)
+		ids := make([]uint, len(ars))
+		for a, i := range ars {
+			ids[a] = i.ID
+		}
+		db.Not(ids).Delete(ArtHis{})
+	}
 }
 
 func hasTag(id uint, name string) (bool, []uint) {

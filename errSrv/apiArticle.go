@@ -20,7 +20,7 @@ func initArtApi(app *iris.Application) {
 	//publish
 	edit.Post("/", auth(artPub))
 	// unpublish
-	edit.Patch("/{id}/{ver}", auth(unPub))
+	edit.Patch("/{id}", auth(unPub))
 	// del
 	edit.Delete("/{id}", auth(delArt))
 }
@@ -36,8 +36,8 @@ func getPosst(ctx iris.Context) {
 	}
 	p := make([]PubLisArt, 0)
 	db.Model(&Art{}).Offset((page-1)*count).
-		Limit(count).Where("arts.version != ?", -1).
-		Order("updated desc, created desc").
+		Limit(count).Where("arts.updated != ?", 0).
+		Order("created desc, updated desc").
 		Find(&p)
 	for i, a := range p {
 		a.Content = fixContent(a.Content)
@@ -106,23 +106,17 @@ func getPost(ctx iris.Context) {
 
 func unPub(ctx iris.Context) {
 	pa := ctx.Params()
-	ver := -1
 	id, err := pa.GetUint("id")
-	if err == nil {
-		ver, err = pa.GetInt("ver")
-	}
 	p := &Art{
 		ID: id,
 	}
 	if err == nil {
-		err = db.Model(p).Update("version", ver).Error
+		err = db.Model(p).Update("updated", 0).Error
 	}
 	if err != nil {
 		handleErr(ctx, err)
 	} else {
-		if ver == -1 {
-			countPos()
-		}
+		countPos()
 		ctx.StatusCode(200)
 	}
 }
@@ -159,7 +153,6 @@ func savArt(ctx iris.Context) {
 	} else {
 		ctx.WriteString(strings.Join([]string{
 			strconv.Itoa(int(p.ID)),
-			strconv.Itoa(int(p.Version)),
 			strconv.Itoa(int(p.SaveAt)),
 		}, "\u0001"))
 	}
@@ -168,19 +161,18 @@ func savArt(ctx iris.Context) {
 func artPub(ctx iris.Context) {
 	p := &Art{}
 	ctx.ReadJSON(p)
-	v := p.Version
+	v := p.Updated
 	err := p.Publish()
 	if err != nil {
 		handleErr(ctx, err)
 	} else {
-		if v == -1 {
+		if v == 0 {
 			countPos()
 		}
 		ctx.StatusCode(200)
 		ctx.WriteString(strings.Join([]string{
 			strconv.Itoa(int(p.ID)),
 			p.Slug,
-			strconv.Itoa(int(p.Version)),
 			strconv.Itoa(int(p.Updated)),
 			nTags,
 			dTags,

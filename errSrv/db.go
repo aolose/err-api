@@ -58,7 +58,7 @@ func nextTokenCleanDelay() {
 func countPos() {
 	var countPost int64
 	var countPubPost int64
-	db.Model(&Art{}).Where("version > ?", 0).Count(&countPubPost)
+	db.Model(&Art{}).Where("updated > ?", 0).Count(&countPubPost)
 	db.Model(&Art{}).Count(&countPost)
 	sys.TotalPosts = int(countPost)
 	sys.TotalPubPosts = int(countPubPost)
