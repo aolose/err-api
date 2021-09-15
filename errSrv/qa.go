@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	cliLife  = 10 * 2 * 3 // 3h
-	qaLife   = 10 * 2     // 2 min
+	cliLife  = 60 * 60 * 3 // 3h
+	qaLife   = 60 * 2      // 2 min
 	tryTimes = 1
 	ticks    = 1
 )

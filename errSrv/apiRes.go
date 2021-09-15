@@ -261,16 +261,17 @@ func compressImg(buf []byte, n, nm string, sm bool, s int64) (error, int) {
 	var img []byte
 	var err error
 	sz, _ := bimg.NewImage(buf).Size()
-	img, err = bimg.NewImage(buf).Convert(bimg.WEBP)
 	if sm && sz.Height > 500 {
+		img, err = bimg.NewImage(buf).Convert(bimg.WEBP)
 		img, err = bimg.NewImage(img).Resize(0, 500)
 	} else {
-		if sz.Width > 3840 {
-			img, _ = bimg.NewImage(img).Resize(3080, 0)
+		tp := bimg.NewImage(buf).Type()
+		if tp == "gif" {
+			img = buf
 		} else {
-			tp := bimg.NewImage(buf).Type()
-			if tp == "gif" && err == nil && sz.Width > 500 {
-				img, err = bimg.NewImage(img).Resize(500, 0)
+			img, err = bimg.NewImage(buf).Convert(bimg.WEBP)
+			if err == nil && sz.Width > 3840 {
+				img, _ = bimg.NewImage(img).Resize(3080, 0)
 			}
 		}
 	}
