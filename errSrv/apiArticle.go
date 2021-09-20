@@ -79,7 +79,7 @@ func getEdits(ctx iris.Context) {
 		db.Table("post").Where("title Like ? OR content Like ?", v, v).Count(&c)
 		t = int(c)
 	}
-	tx.Order("updated desc, save_at desc").Find(&p)
+	tx.Order("save_at desc").Find(&p)
 	ls := &ListPost{
 		Posts: p,
 		Total: (t + count - 1) / count,
