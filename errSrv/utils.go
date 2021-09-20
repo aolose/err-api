@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/kataras/iris/v12"
+	"math/rand"
 	"strings"
 	"time"
 )
@@ -99,7 +100,23 @@ func addJob(fn func()) {
 	jobs = append(jobs, fn)
 }
 
-func md5Enc(str string) string {
-	c := md5.Sum([]byte(str + "err#*&@#1"))
+func md5Enc(str, s string) string {
+	if s == "" {
+		s = "err#*&@#1"
+	}
+	c := md5.Sum([]byte(str + s))
 	return hex.EncodeToString(c[0:len(c)])
+}
+
+func randK(n int) string {
+	a := "abcdefghijklmnopqrstuvwxyz" +
+		"ABCDEFGHIJKLMNOPQRSTUV" +
+		"WXYZ0123456789"
+	b := ""
+	l := len(a) - 1
+	for i := n; i > -1; i-- {
+		v := rand.Intn(l)
+		b = b + a[v:v+1]
+	}
+	return b
 }

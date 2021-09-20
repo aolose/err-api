@@ -11,6 +11,16 @@ type NewTick struct {
 	Question string `json:"q"`
 }
 
+var authKeys = make(map[string]int64)
+
+func cleanAuthKeys() {
+	for k, t := range authKeys {
+		if t < now() {
+			delete(authKeys, k)
+		}
+	}
+}
+
 func (cli *QAClient) passed(ctx iris.Context, key, aws, msg string) bool {
 	k, q, t := cli.checkA(key, aws)
 	if k != "" || t != 0 {
@@ -49,10 +59,22 @@ func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 									}
 								}
 							}
-							if sys.Admin == usr && sys.Pwd == md5Enc(pwd) {
-								pass = true
-								ctx.StatusCode(200)
-								_, _ = ctx.WriteString(newTk())
+							if sys.Admin == usr {
+								for k, t := range authKeys {
+									if t < now() {
+										wait(func() {
+											delete(authKeys, k)
+										})
+									} else if md5Enc(sys.Pwd, k) == pwd {
+										wait(func() {
+											delete(authKeys, k)
+										})
+										pass = true
+										ctx.StatusCode(200)
+										_, _ = ctx.WriteString(newTk())
+										break
+									}
+								}
 							} else if cli != nil {
 								cli.tryTimes = cli.tryTimes - 1
 								if cli.tryTimes < 1 {

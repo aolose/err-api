@@ -22,6 +22,12 @@ func Run(addr string) {
 		fmt.Printf("Error %v \t %v %v\n", r.Method, r.URL, ctx.GetErr())
 		ctx.Next()
 	})
+	app.Get("/k", func(ctx iris.Context) {
+		k := randK(8)
+		authKeys[k] = now() + 60
+		ctx.StatusCode(200)
+		_, _ = ctx.WriteString(k)
+	})
 	app.Post("/auth", auth(nil))
 	app.Get("/ot", auth(func(ctx iris.Context) {
 		sys.Token = ""
