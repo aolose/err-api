@@ -140,12 +140,20 @@ func resLs(ctx iris.Context) {
 
 func upload(ctx iris.Context) {
 	ctx.SetMaxRequestBodySize(maxSize)
-	key := ctx.FormValue("title")
-	nm := ctx.FormValue("name")
+	key := ctx.FormValue("key")
+	nm := ctx.FormValue("nm")
 	if fileCache == nil {
 		fileCache = make(map[string][]multipart.File)
 		fileInfoCache = make(map[string][3]string)
 		fileFirstCache = make(map[string][]byte)
+	}
+	if nm != "" {
+		a := strings.Split(nm, ".")
+		c := a[len(a)-1]
+		tp := ctx.FormValue("tp")
+		if c != "" {
+			wait(func() { fileInfoCache[key] = [3]string{nm, tp, c} })
+		}
 	}
 	pt := ctx.FormValue("part")
 	part, _ := strconv.Atoi(pt)
@@ -159,9 +167,11 @@ func upload(ctx iris.Context) {
 		buf := new(bytes.Buffer)
 		_, _ = buf.ReadFrom(file)
 		bt := buf.Bytes()
-		kind, _ := filetype.Match(bt)
+		kind, e := filetype.Match(bt)
+		if e == nil && kind.MIME.Value != "" {
+			wait(func() { fileInfoCache[key] = [3]string{nm, kind.MIME.Value, kind.Extension} })
+		}
 		wait(
-			func() { fileInfoCache[key] = [3]string{nm, kind.MIME.Value, kind.Extension} },
 			func() { fileFirstCache[key] = bt },
 		)
 	} else {
