@@ -71,7 +71,14 @@ func countRes() {
 }
 
 func syncSys() {
+	if sys.CnLen == 0 {
+		sys.CnLen = 64
+	}
+	if sys.CmLen == 0 {
+		sys.CmLen = 512
+	}
 	if sys.Admin == "" {
+		//sys.DisCm =1
 		sys.Admin = "admin"
 		sys.Pwd = md5Enc("admin", "")
 	}

@@ -40,5 +40,6 @@ func Run(addr string) {
 	initHisApi(app)
 	initQa(app)
 	initBlackList(app)
+	initCmApi(app)
 	_ = app.Listen(addr)
 }

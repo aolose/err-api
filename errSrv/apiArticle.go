@@ -94,6 +94,7 @@ func getPost(ctx iris.Context) {
 		First(p, "slug = ?", ctx.Params().Get("slug")).Error
 	if err == nil {
 		pp := p.PubArt
+		pp.AID = p.ID
 		ctx.JSON(pp)
 		ip := getIP(ctx)
 		addJob(func() {

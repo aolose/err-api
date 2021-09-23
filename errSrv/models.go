@@ -176,6 +176,11 @@ type System struct {
 	Pwd           string `json:"pwd"`
 	LoginProtect  bool   `json:"qal"`
 	CommentQA     bool   `json:"qac"`
+	CmLen         int    `json:"cLen"`
+	CmLife        int64  `json:"cLife"`
+	DisCm         int    `json:"disCm"`
+	AuditCm       int    `json:"auCm"`
+	CnLen         int    `json:"cnLen"`
 	Token         string `gorm:"-" json:"-"`
 	TotalPubPosts int    `gorm:"-" json:"-"`
 	TotalPosts    int    `gorm:"-" json:"-"`
@@ -203,13 +208,17 @@ type Author struct {
 }
 
 type Comment struct {
-	ID      uint   `gorm:"primarykey" json:"id"`
-	Avatar  int    `json:"avatar"`
-	Name    string `json:"name"`
-	ArtID   uint   `json:"-"`
-	Reply   uint   `json:"reply"`
-	Content string `json:"content"`
-	Link    string `json:"link"`
+	ID      uint   `gorm:"primarykey" json:"i"`
+	Avatar  int    `json:"a"`
+	Name    string `json:"n"`
+	ArtID   uint   `json:"d"`
+	Reply   uint   `json:"r"`
+	Content string `json:"c"`
+	Link    string `json:"l"`
+	Status  int    `json:"s"`
+	Token   string `json:"-"`
+	Created int64  `json:"t"`
+	Own     int    `json:"o" gorm:"-"`
 }
 
 type PubLisArt struct {
@@ -223,13 +232,15 @@ type PubLisArt struct {
 }
 
 type PubArt struct {
-	Read         int    `json:"rd"`
-	PubContent   string `json:"pubCont"`
-	AuthorID     uint   `json:"-"`
-	Author       Author `json:"author"`
-	AllowComment int    `json:"cm"`
-	Pwd          string `json:"pwd"`
-	Tags         string `json:"tags"`
+	AID        uint   `json:"aid" grom:"-"`
+	Read       int    `json:"rd"`
+	PubContent string `json:"pubCont"`
+	AuthorID   uint   `json:"-"`
+	Author     Author `json:"author"`
+	Pwd        string `json:"pwd"`
+	Tags       string `json:"tags"`
+	DisCm      int    `json:"disCm"`
+	AuditCm    int    `json:"auCm"`
 	PubLisArt
 }
 
