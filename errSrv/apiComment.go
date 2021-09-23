@@ -140,8 +140,11 @@ func cmCreate(ctx iris.Context) {
 				db.Save(d)
 			}
 		} else {
-			ck = enc(uuid.New().String())
+			if ck == "" {
+				ck = enc(uuid.New().String())
+			}
 			c.ID = 0
+			c.IP = getIP(ctx)
 			c.Token = ck
 			c.Created = now()
 			err = db.Save(c).Error

@@ -219,6 +219,7 @@ type Comment struct {
 	Token   string `json:"-"`
 	Created int64  `json:"t"`
 	Own     int    `json:"o" gorm:"-"`
+	IP      string `json:"-"`
 }
 
 type PubLisArt struct {
