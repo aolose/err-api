@@ -4,7 +4,9 @@ import (
 	"errors"
 	"github.com/google/uuid"
 	"github.com/kataras/iris/v12"
+	"regexp"
 	"strconv"
+	"strings"
 )
 
 func initCmApi(app *iris.Application) {
@@ -111,12 +113,17 @@ func cmCreate(ctx iris.Context) {
 		}
 	}
 	if err == nil {
+		c.Name = strings.TrimSpace(c.Name)
+		c.Content = strings.TrimSpace(c.Content)
 		la := len(c.Content)
 		lb := len(c.Name)
+		allow := regexp.MustCompile("^[0-9a-z· \u4e00-\u9fa5]+$")
 		if lb == 0 || la == 0 {
 			err = errors.New("name or comment is empty")
 		} else if lb > sys.CnLen || la > sys.CmLen {
 			err = errors.New("name or comment too long")
+		} else if !allow.MatchString(c.Name) {
+			err = errors.New("illegal name format")
 		}
 	}
 	if err == nil {
