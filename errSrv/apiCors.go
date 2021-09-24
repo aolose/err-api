@@ -17,7 +17,7 @@ func allowCors(app *iris.Application) {
 	app.UseRouter(func(ctx iris.Context) {
 		if blackCache.has(getIP(ctx)) {
 			ctx.StatusCode(403)
-			ctx.WriteString("Access Forbidden!")
+			ctx.WriteString("forbidden ip")
 		} else {
 			r := ctx.Request()
 			origin := r.Header.Get("origin")

@@ -20,7 +20,6 @@ func initSys() {
 	db.FirstOrCreate(sys)
 	countPos()
 	countRes()
-	refreshQaCache()
 	syncSys()
 	var tas []TagArt
 	db.Find(&tas)
@@ -153,10 +152,6 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.C
 			re.List = res
 		case Comment:
 			res := make([]Comment, 0)
-			err = tx.Find(&res).Error
-			re.List = res
-		case Qa:
-			res := make([]Qa, 0)
 			err = tx.Find(&res).Error
 			re.List = res
 		case BlackList:

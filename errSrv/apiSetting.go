@@ -11,7 +11,7 @@ func initSettingApi(app *iris.Application) {
 func setAcc(ctx iris.Context) {
 	b, err := ctx.GetBody()
 	if err == nil {
-		usr, pwd, _, _, er := upk(string(b))
+		usr, pwd, er := upk(string(b))
 		if er != nil {
 			err = er
 		} else {

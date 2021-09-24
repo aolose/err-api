@@ -11,8 +11,8 @@ func Run(addr string) {
 	go func() {
 		for {
 			time.Sleep(time.Second * 5)
-			cleanQA()
 			cleanToken()
+			cleanCli()
 		}
 	}()
 	app := iris.New()
@@ -23,8 +23,7 @@ func Run(addr string) {
 		ctx.Next()
 	})
 	app.Get("/k", func(ctx iris.Context) {
-		k := randK(8)
-		authKeys[k] = now() + 60
+		k := getCli(getIP(ctx)).key
 		ctx.StatusCode(200)
 		_, _ = ctx.WriteString(k)
 	})
@@ -38,7 +37,6 @@ func Run(addr string) {
 	initTagsApi(app)
 	initResApi(app)
 	initHisApi(app)
-	initQa(app)
 	initBlackList(app)
 	initCmApi(app)
 	_ = app.Listen(addr)

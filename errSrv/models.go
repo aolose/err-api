@@ -134,7 +134,7 @@ func isBKType(t int) bool {
 
 type BKManager []BlackList
 
-func (b *BKManager) add(bl BlackList) {
+func (b *BKManager) add(bl *BlackList) {
 	bl.Saved = now()
 	db.Create(bl)
 	s := blackCache.add(bl.IP)
@@ -166,18 +166,6 @@ type ListPost struct {
 }
 
 var tagsCache = map[string][]uint{}
-
-type RQA struct {
-	ID    uint   `gorm:"primarykey" json:"id"`
-	Q     string `gorm:"index" json:"q"`
-	A     string `json:"a"`
-	Saved int64  `json:"saved"`
-}
-
-type Qa struct {
-	RQA
-	Params string `json:"p"`
-}
 
 type System struct {
 	ID            uint   `json:"-"`
@@ -521,7 +509,6 @@ func delTags(id uint, name ...string) error {
 
 func dbInit() {
 	db.AutoMigrate(&System{})
-	db.AutoMigrate(&Qa{})
 	db.AutoMigrate(&BlackList{})
 	db.AutoMigrate(&Art{})
 	db.AutoMigrate(&ArtHis{})
