@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+type Notice struct {
+	ID   uint   `gorm:"primarykey" json:"i"`
+	Date int64  `json:"d"`
+	Msg  string `json:"m"`
+	Read int    `json:"r"`
+	Type int    `json:"c"`
+	Meta string `json:"t"`
+}
+
 type ArtVisitDetail struct {
 	ID    uint   `gorm:"primarykey" json:"id"`
 	Ip    string `gorm:"index`
@@ -519,6 +528,7 @@ func dbInit() {
 	db.AutoMigrate(&Tag{})
 	db.AutoMigrate(&TagArt{})
 	db.AutoMigrate(&Res{})
+	db.AutoMigrate(&Notice{})
 	db.AutoMigrate(&Author{})
 	db.AutoMigrate(&Comment{})
 	db.AutoMigrate(&Guest{})

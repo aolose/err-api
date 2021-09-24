@@ -147,6 +147,14 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.C
 		}
 		var err error
 		switch table.(type) {
+		case Notice:
+			res := make([]Notice, 0)
+			err = tx.Find(&res).Error
+			re.List = res
+		case Comment:
+			res := make([]Comment, 0)
+			err = tx.Find(&res).Error
+			re.List = res
 		case Qa:
 			res := make([]Qa, 0)
 			err = tx.Find(&res).Error

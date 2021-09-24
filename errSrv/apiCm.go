@@ -9,11 +9,14 @@ import (
 	"strings"
 )
 
+var totalCm int64
+
 func initCmApi(app *iris.Application) {
 	cm := app.Party("c")
 	cm.Post("/", cmCreate)
 	cm.Get("/{id}/{page}", cmLs)
 	cm.Get("/m/{page}", auth(cmList))
+	cm.Get("/{page}", pageQuery(Comment{}, &totalCm, "art_id", "type", "%msg%"))
 	cm.Delete("/", cmDel)
 	cm.Post("/{id}", auth(cmOpt))
 }
