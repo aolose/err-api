@@ -2,6 +2,7 @@ package errSrv
 
 import (
 	"github.com/kataras/iris/v12"
+	"log"
 	"strconv"
 	"time"
 )
@@ -29,6 +30,8 @@ func getCli(ip string) *Client {
 		cliMap[ip] = cli
 	}
 	cli.expire = now() + cliLife
+	log.Printf("cli: ip %s try %d tk %d de %d nt %d",
+		cli.ip, cli.tryTimes, cli.ticks, cli.delay, cli.nextTickTime)
 	return cli
 }
 
