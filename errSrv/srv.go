@@ -39,5 +39,7 @@ func Run(addr string) {
 	initHisApi(app)
 	initBlackList(app)
 	initCmApi(app)
-	_ = app.Listen(addr)
+	_ = app.Run(iris.Addr(addr), iris.WithConfiguration(iris.Configuration{
+		RemoteAddrHeaders: []string{"X-Err-Rmt"},
+	}))
 }
