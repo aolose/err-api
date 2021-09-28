@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const DOMAIN = "http://www.err.name"
+const DOMAIN = "https://www.err.name"
 
 //const DOMAIN="http://www.local.io"
 func Run(addr string) {
