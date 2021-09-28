@@ -15,6 +15,7 @@ import (
 
 func authFail(ctx iris.Context) {
 	ctx.StatusCode(403)
+	setSession(ctx, "")
 	d := "auth fail"
 	if sys.Token == "" {
 		d = "session expired"

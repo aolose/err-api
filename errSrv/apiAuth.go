@@ -3,7 +3,9 @@ package errSrv
 import (
 	"github.com/kataras/iris/v12"
 	"log"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -49,6 +51,25 @@ func str(ctx iris.Context, s string) {
 	_, _ = ctx.WriteString(s)
 }
 
+func setSession(ctx iris.Context, c string) {
+	u, _ := url.Parse(DOMAIN)
+	d := strings.Split(u.Hostname(), ".")
+	l := len(d)
+	if l > 2 {
+		d = d[l-2:]
+	}
+	dm := strings.Join(d, ".")
+	ctx.SetCookie(&iris.Cookie{
+		Name:     "session_id",
+		Value:    c,
+		HttpOnly: true,
+		MaxAge:   60 * 60 * 24 * 7,
+		SameSite: iris.SameSiteLaxMode,
+		Path:     "/",
+		Domain:   dm,
+	}, iris.CookieAllowSubdomains())
+}
+
 func login(ctx iris.Context, s string) {
 	ip := getIP(ctx)
 	c := getCli(ip)
@@ -75,7 +96,9 @@ func login(ctx iris.Context, s string) {
 				if md5Enc(sys.Pwd, c.key) == pwd {
 					delete(cliMap, c.ip)
 					ctx.StatusCode(200)
-					_, _ = ctx.WriteString(newTk())
+					tk := newTk()
+					setSession(ctx, tk)
+					_, _ = ctx.WriteString(tk)
 					return
 				}
 			}
@@ -137,15 +160,6 @@ func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 						if len(sys.Token) > 20 && sys.Token == s {
 							pass = true
 							ctx.StatusCode(200)
-							ctx.SetCookie(&iris.Cookie{
-								Name:     "session_id",
-								Value:    sys.Token,
-								HttpOnly: true,
-								MaxAge:   60 * 60 * 24 * 7,
-								SameSite: iris.SameSiteLaxMode,
-								Path:     "/",
-								Domain:   "err.name",
-							}, iris.CookieAllowSubdomains())
 						}
 					}
 				}

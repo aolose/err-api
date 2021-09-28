@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+const DOMAIN = "http://www.err.name"
+
+//const DOMAIN="http://www.local.io"
 func Run(addr string) {
 	go doJobs()
 	go func() {
@@ -31,6 +34,7 @@ func Run(addr string) {
 	app.Get("/ot", auth(func(ctx iris.Context) {
 		sys.Token = ""
 		ctx.StatusCode(200)
+		setSession(ctx, "")
 	}))
 	initSettingApi(app)
 	initArtApi(app)

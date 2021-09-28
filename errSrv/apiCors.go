@@ -47,7 +47,7 @@ func allowCors(app *iris.Application) {
 									m1.ReplaceAllString(re.Name, "$1")+"."+re.Ext+"\"",
 							)
 						}
-						if origin == "https://www.err.name" || origin == "http://localhost:3000" {
+						if origin == DOMAIN {
 							ctx.Next()
 							return
 						}
@@ -59,7 +59,7 @@ func allowCors(app *iris.Application) {
 			}
 
 			ua := r.Header.Get("User-agent")
-			if origin == "https://www.err.name" || ua == "node-fetch" || origin == "null" || origin == "http://localhost:3000" {
+			if origin == DOMAIN || ua == "node-fetch" || origin == "null" {
 				ctx.Header("Access-Control-Allow-Origin", origin)
 				ctx.Header("Access-Control-Allow-Credentials", "true")
 				ctx.Header("Access-Control-Allow-Headers", "token")
