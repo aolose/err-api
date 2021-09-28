@@ -40,6 +40,6 @@ func Run(addr string) {
 	initBlackList(app)
 	initCmApi(app)
 	_ = app.Run(iris.Addr(addr), iris.WithConfiguration(iris.Configuration{
-		RemoteAddrHeaders: []string{"X-Err-Rmt"},
+		RemoteAddrHeaders: []string{"X-Real-Ip"},
 	}))
 }
