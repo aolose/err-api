@@ -144,6 +144,7 @@ func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 								MaxAge:   60 * 60 * 24 * 7,
 								SameSite: iris.SameSiteLaxMode,
 								Path:     "/",
+								Domain:   "err.name",
 							}, iris.CookieAllowSubdomains())
 						}
 					}
