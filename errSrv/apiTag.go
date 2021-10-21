@@ -32,5 +32,34 @@ func getTags2(ctx iris.Context) {
 }
 
 func getTagArt(ctx iris.Context) {
-
+	page := ctx.Params().GetIntDefault("page", 1)
+	name := ctx.Params().GetStringDefault("name", "")
+	count := ctx.URLParamIntDefault("count", 5)
+	if page == 0 {
+		page = 1
+	}
+	if count == 0 {
+		count = 5
+	}
+	if name == "" {
+		ctx.StatusCode(404)
+	} else {
+		p := make([]PubLisArt, 0)
+		if ids, ok := tagsCache[name]; ok {
+			db.Model(&Art{}).Offset((page-1)*count).
+				Limit(count).Where("arts.updated != ? and arts.id in ?", 0, ids).
+				Order("created desc, updated desc").
+				Find(&p)
+			for i, a := range p {
+				a.Content = fixContent(a.Content)
+				p[i] = a
+			}
+			ls := &ListPubPost{
+				Posts: p,
+				Total: (len(ids) + count - 1) / count,
+				Cur:   page,
+			}
+			ctx.JSON(ls)
+		}
+	}
 }

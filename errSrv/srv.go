@@ -8,7 +8,7 @@ import (
 
 const DOMAIN = "https://www.err.name"
 
-//const DOMAIN="http://www.local.io"
+//const DOMAIN="http://localhost:3000"
 func Run(addr string) {
 	go doJobs()
 	go func() {
