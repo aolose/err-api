@@ -76,12 +76,19 @@ func syncSys() {
 	if sys.CmLen == 0 {
 		sys.CmLen = 512
 	}
-	if sys.Admin == "" {
+	if errCfg.User != "" || sys.Admin == "" {
+		if errCfg.User == "" {
+			errCfg.User = "admin"
+			errCfg.Pass = "admin"
+		}
 		//sys.DisCm =1
-		sys.Admin = "admin"
-		sys.Pwd = md5Enc("admin", "")
+		sys.Admin = errCfg.User
+		sys.Pwd = md5Enc(errCfg.Pass, "")
+		errCfg.User = ""
+		errCfg.Pass = ""
+		errCfg.Update()
 	}
-	db.Save(sys)
+	db.Updates(sys)
 }
 
 func Connect() {
@@ -92,6 +99,7 @@ func Connect() {
 	}
 	fmt.Printf("Connected to %q", dbName)
 	dbInit()
+	initialCfg()
 	initSys()
 }
 

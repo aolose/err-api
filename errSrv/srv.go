@@ -3,13 +3,28 @@ package errSrv
 import (
 	"fmt"
 	"github.com/kataras/iris/v12"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"os"
 	"time"
 )
 
-const DOMAIN = "https://www.err.name"
+type Cfg struct {
+	Bind   string
+	Domain string
+	User   string
+	Pass   string
+}
+
+func (c *Cfg) Update() {
+	d, _ := yaml.Marshal(&errCfg)
+	_ = ioutil.WriteFile("cfg.yaml", d, os.ModePerm)
+}
+
+var errCfg Cfg
 
 //const DOMAIN="http://localhost:3000"
-func Run(addr string) {
+func Run() {
 	go doJobs()
 	go func() {
 		for {
@@ -43,7 +58,7 @@ func Run(addr string) {
 	initHisApi(app)
 	initBlackList(app)
 	initCmApi(app)
-	_ = app.Run(iris.Addr(addr), iris.WithConfiguration(iris.Configuration{
+	_ = app.Run(iris.Addr(errCfg.Bind), iris.WithConfiguration(iris.Configuration{
 		RemoteAddrHeaders: []string{"X-Real-Ip"},
 	}))
 }

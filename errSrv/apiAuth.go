@@ -52,7 +52,7 @@ func str(ctx iris.Context, s string) {
 }
 
 func setSession(ctx iris.Context, c string) {
-	u, _ := url.Parse(DOMAIN)
+	u, _ := url.Parse(errCfg.Domain)
 	d := strings.Split(u.Hostname(), ".")
 	l := len(d)
 	if l > 2 {

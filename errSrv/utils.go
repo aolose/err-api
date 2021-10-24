@@ -8,10 +8,23 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/kataras/iris/v12"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"log"
 	"math/rand"
 	"strings"
 	"time"
 )
+
+func initialCfg() {
+	b, e := ioutil.ReadFile("cfg.yaml")
+	if e == nil {
+		e = yaml.Unmarshal([]byte(b), &errCfg)
+	}
+	if e != nil {
+		log.Fatalln(e)
+	}
+}
 
 func authFail(ctx iris.Context) {
 	ctx.StatusCode(403)
