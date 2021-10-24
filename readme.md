@@ -1,8 +1,9 @@
 # api for err blog 
 
 ### before build
+compress img need gcc and vips 
 
-- for window os
+Windows:
 - install https://www.msys2.org/
 - run msys2
 ```bash
@@ -15,6 +16,12 @@ pacman -S mingw-w64-x86_64-libvips
 ```
 add \xxx\mingw64\bin to your path
 ```
+Ubuntu:
+```bash
+sudo apt install build-essential
+sudo apt install libvips-dev
+```
+
 
 ## Build
 1. `go mod tidy`
@@ -34,5 +41,18 @@ domain: http://localhost:3000
 user: ""
 pass: ""
 ```
+
+### Others
+- if ip record not correct, you should add 
+`X-Real-Ip` header to upstream
+- Cookie need SameSite setting, top-level domain should be same.
+  
+  example:
+
+  front web: www.demoA.com 
+  
+  api server: api.demoA.com
+
+
 
 
