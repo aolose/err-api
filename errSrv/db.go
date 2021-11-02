@@ -117,9 +117,10 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.C
 		qs := make([]interface{}, 0)
 		noQ := true
 		for _, f := range field {
-			re, _ := regexp.Compile("/([_%]*)([a-b_]+?)([_%]*)/")
+			re := regexp.MustCompile("^([_%]*)([a-z_]+?)([_%]*)$")
 			s := re.FindStringSubmatch(f)
-			if len(s) == 3 {
+			if len(s) == 4 {
+				s = s[1:]
 				ff := s[1]
 				v := ctx.URLParam(ff)
 				if v != "" {
@@ -127,7 +128,7 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.C
 					qq := " = ?"
 					if len(s[0]) > 0 || len(s[2]) > 0 {
 						qq = " like ?"
-						v = s[0] + v + s[1]
+						v = s[0] + v + s[2]
 					}
 					q = append(q, ff+qq)
 					qs = append(qs, v)
@@ -160,7 +161,32 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.C
 			re.List = res
 		case Comment:
 			res := make([]Comment, 0)
+			art := make([]Art, 0)
 			err = tx.Find(&res).Error
+			if err == nil {
+				ids := make([]uint, len(res))
+				for n, i := range res {
+					ids[n] = i.ArtID
+				}
+				err = db.Find(&art, ids).Error
+			}
+			if err == nil {
+				for n, r := range res {
+					res[n].From = r.IP
+					for _, a := range art {
+						if r.ArtID == a.ID {
+							res[n].Inf = ArtInf{
+								Title: a.Title,
+								Slug:  a.Slug,
+								Date:  a.Created,
+							}
+							if a.OverrideCreate > 0 {
+								res[n].Inf.Date = a.OverrideCreate
+							}
+						}
+					}
+				}
+			}
 			re.List = res
 		case BlackList:
 			res := make([]BlackList, 0)

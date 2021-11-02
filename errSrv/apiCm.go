@@ -16,7 +16,7 @@ func initCmApi(app *iris.Application) {
 	cm.Post("/", cmCreate)
 	cm.Get("/{id}/{page}", cmLs)
 	cm.Get("/m/{page}", auth(cmList))
-	cm.Get("/{page}", pageQuery(Comment{}, &totalCm, "art_id", "type", "%msg%"))
+	cm.Get("/{page}", pageQuery(Comment{}, &totalCm, "art_id", "%content%"))
 	cm.Delete("/", cmDel)
 	cm.Post("/{id}", auth(cmOpt))
 }
@@ -75,7 +75,7 @@ func cmLs(ctx iris.Context) {
 		if ck != "" {
 			n := now() - sys.CmLife
 			for i, c := range cm {
-				if c.Token == ck && c.Created > n {
+				if c.Token == ck && c.Saved > n {
 					cm[i].Own = 1
 				}
 			}
@@ -141,7 +141,7 @@ func cmCreate(ctx iris.Context) {
 			}
 			err = db.Where("token = ?", ck).First(d).Error
 			if err == nil {
-				if d.Created+sys.CmLife < now() {
+				if d.Saved+sys.CmLife < now() {
 					err = errors.New("can't edit")
 				}
 			}
@@ -155,8 +155,9 @@ func cmCreate(ctx iris.Context) {
 			}
 			c.ID = 0
 			c.IP = getIP(ctx)
+			c.From = ""
 			c.Token = ck
-			c.Created = now()
+			c.Saved = now()
 			err = db.Save(c).Error
 		}
 	}

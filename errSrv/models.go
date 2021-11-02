@@ -203,9 +203,14 @@ type Author struct {
 	ID   uint   `gorm:"primarykey" json:"-"`
 	Name string `json:"name"`
 }
-
+type ArtInf struct {
+	Slug  string `json:"s"`
+	Title string `json:"t"`
+	Date  int64  `json:"d"`
+}
 type Comment struct {
 	ID      uint   `gorm:"primarykey" json:"i"`
+	Inf     ArtInf `gorm:"-" json:"x"`
 	Avatar  int    `json:"a"`
 	Name    string `json:"n"`
 	ArtID   uint   `json:"d"`
@@ -214,9 +219,10 @@ type Comment struct {
 	Link    string `json:"l"`
 	Status  int    `json:"s"`
 	Token   string `json:"-"`
-	Created int64  `json:"t"`
+	Saved   int64  `json:"t"`
 	Own     int    `json:"o" gorm:"-"`
 	IP      string `json:"-"`
+	From    string `json:"f"`
 }
 
 type PubLisArt struct {
