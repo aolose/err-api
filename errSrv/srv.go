@@ -17,6 +17,8 @@ type Cfg struct {
 }
 
 func (c *Cfg) Update() {
+	errCfg.User = ""
+	errCfg.Pass = ""
 	d, _ := yaml.Marshal(&errCfg)
 	_ = ioutil.WriteFile("cfg.yaml", d, os.ModePerm)
 }

@@ -1,5 +1,4 @@
 bind: 127.0.0.1:8880
-domain: https://www.err.name
-#domain: http://localhost:3000
+domain: http://localhost:3000
 user: "admin"
 pass: "admin"
