@@ -100,7 +100,7 @@ func cmList(ctx iris.Context) {
 }
 
 func countCm() {
-	db.Model(&Res{}).Count(&totalCm)
+	db.Model(&Comment{}).Count(&totalCm)
 }
 
 func cmCreate(ctx iris.Context) {
