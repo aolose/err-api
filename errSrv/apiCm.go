@@ -17,8 +17,11 @@ func initCmApi(app *iris.Application) {
 	cm.Get("/{id}/{page}", cmLs)
 	cm.Get("/m/{page}", auth(cmList))
 	cm.Get("/{page}", pageQuery(Comment{}, &totalCm, "art_id", "%content%"))
-	cm.Delete("/", cmDel)
+	cm.Delete("/", auth(cmDel))
+	cm.Delete("/{id}", cmDel2)
 	cm.Post("/{id}", auth(cmOpt))
+	sys.CmLife = 3600 * 24 * 2 // 2day
+	countCm()
 }
 
 type CMLs struct {
@@ -96,6 +99,10 @@ func cmList(ctx iris.Context) {
 
 }
 
+func countCm() {
+	db.Model(&Res{}).Count(&totalCm)
+}
+
 func cmCreate(ctx iris.Context) {
 	ck := ctx.GetCookie("cm_tk")
 	var err error
@@ -159,6 +166,9 @@ func cmCreate(ctx iris.Context) {
 			c.Token = ck
 			c.Saved = now()
 			err = db.Save(c).Error
+			if err == nil {
+				totalCm = totalCm + 1
+			}
 		}
 	}
 	ctx.SetCookie(&iris.Cookie{
@@ -184,6 +194,23 @@ func cmEdit(ctx iris.Context) {
 
 }
 
+func cmDel2(ctx iris.Context) {
+	ck := ctx.GetCookie("cm_tk")
+	id, err := ctx.Params().GetUint("id")
+	if err == nil && id > 0 && ck != "" {
+		err = db.Delete(&Comment{}, id).Error
+	}
+	handleErr(ctx, err)
+}
 func cmDel(ctx iris.Context) {
-
+	id := ctx.URLParam("id")
+	if id == "" {
+		ctx.StatusCode(200)
+	} else {
+		ids := strings.Split(id, ",")
+		err := db.Delete(&Comment{}, "ID in ?", ids).Error
+		handleErr(ctx, err)
+		countCm()
+		ctx.StatusCode(200)
+	}
 }
