@@ -110,7 +110,7 @@ type ListResult struct {
 }
 
 func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.Context) {
-	return auth(func(ctx iris.Context) {
+	return func(ctx iris.Context) {
 		page := ctx.Params().GetIntDefault("page", 1)
 		count := ctx.URLParamIntDefault("count", 20)
 		q := make([]string, 0)
@@ -199,7 +199,7 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.C
 			ctx.StatusCode(200)
 			_, _ = ctx.JSON(re)
 		}
-	})
+	}
 }
 
 func syncTotal(table string, c *int64) {

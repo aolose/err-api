@@ -4,8 +4,8 @@ import "github.com/kataras/iris/v12"
 
 func initSettingApi(app *iris.Application) {
 	sit := app.Party("/sys")
-	sit.Get("", auth(sysInfo))
-	sit.Post("/acc", auth(setAcc))
+	auth(sit.Get, "", sysInfo)
+	auth(sit.Post, "/acc", setAcc)
 }
 
 func setAcc(ctx iris.Context) {

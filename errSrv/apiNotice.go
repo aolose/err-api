@@ -6,7 +6,7 @@ var totalNotice int64
 
 func initNoticeApi(app *iris.Application) {
 	n := app.Party("n")
-	n.Get("/{page}", pageQuery(Notice{}, &totalNotice, "read", "type", "%msg%"))
+	auth(n.Get, "/{page}", pageQuery(Notice{}, &totalNotice, "read", "type", "%msg%"))
 }
 
 func pushNotice(n *Notice) {

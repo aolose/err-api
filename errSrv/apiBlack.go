@@ -13,15 +13,15 @@ var geoCache = make(map[string]string)
 
 var geoDb *geoip2.Reader
 
-func getCountry(ip string) string {
+func getCity(ip string) string {
 	if geoDb != nil {
 		if c, ok := geoCache[ip]; ok {
 			return c
 		}
-		ip := net.ParseIP("81.2.69.142")
-		rec, err := geoDb.City(ip)
+		p := net.ParseIP(ip)
+		rec, err := geoDb.City(p)
 		if err == nil {
-			return rec.Country.Names["en"]
+			return rec.Country.Names["en"] + "\t" + rec.City.Names["en"]
 		}
 	}
 	return ""
@@ -33,7 +33,7 @@ func initBlackList(app *iris.Application) {
 	blackCache = &BlCAche{}
 	blackCache.load()
 	bk := app.Party("/bk")
-	bk.Get("/{page}", pageQuery(BlackList{}, &totalBL, "ip", "tp"))
+	auth(bk.Get, "/{page}", pageQuery(BlackList{}, &totalBL, "ip", "tp"))
 	bk.Post("/", bkSave)
 	bk.Delete("/{id}", bkDel)
 }

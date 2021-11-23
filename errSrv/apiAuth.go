@@ -2,6 +2,8 @@ package errSrv
 
 import (
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/context"
+	"github.com/kataras/iris/v12/core/router"
 	"log"
 	"net/url"
 	"strconv"
@@ -145,7 +147,18 @@ func cleanCli() {
 	}
 }
 
-func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
+var authPaths = make([]string, 0)
+
+func addToAuthPath(s string) {
+	for _, a := range authPaths {
+		if a == s {
+			return
+		}
+	}
+	authPaths = append(authPaths, s)
+}
+
+func authHandler(next iris.Handler) func(ctx iris.Context) {
 	return func(ctx iris.Context) {
 		pass := false
 		if next == nil {
@@ -184,4 +197,8 @@ func auth(next func(ctx iris.Context)) func(ctx iris.Context) {
 			}
 		}
 	}
+}
+
+func auth(fn func(path string, handlers ...context.Handler) *router.Route, path string, next iris.Handler) {
+	addToAuthPath(fn(path, authHandler(next)).Tmpl().Src)
 }

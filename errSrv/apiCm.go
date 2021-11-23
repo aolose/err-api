@@ -15,11 +15,11 @@ func initCmApi(app *iris.Application) {
 	cm := app.Party("c")
 	cm.Post("/", cmCreate)
 	cm.Get("/{id}/{page}", cmLs)
-	cm.Get("/m/{page}", auth(cmList))
-	cm.Get("/{page}", pageQuery(Comment{}, &totalCm, "art_id", "%content%"))
-	cm.Delete("/", auth(cmDel))
+	auth(cm.Get, "/m/{page}", cmList)
+	auth(cm.Get, "/{page}", pageQuery(Comment{}, &totalCm, "art_id", "%content%"))
+	auth(cm.Delete, "/", cmDel)
 	cm.Delete("/{id}", cmDel2)
-	cm.Post("/{id}", auth(cmOpt))
+	auth(cm.Post, "/{id}", cmOpt)
 	sys.CmLife = 3600 * 24 * 2 // 2day
 	countCm()
 }
@@ -187,10 +187,6 @@ func cmCreate(ctx iris.Context) {
 }
 
 func cmOpt(ctx iris.Context) {
-
-}
-
-func cmEdit(ctx iris.Context) {
 
 }
 

@@ -16,24 +16,13 @@ type Notice struct {
 	Meta string `json:"t"`
 }
 
-type ArtVisitDetail struct {
-	ID    uint   `gorm:"primarykey" json:"id"`
-	Ip    string `gorm:"index`
-	Aid   uint   `gorm:"index`
-	Date  uint   `gorm:"index`
-	Count int
-}
-
-func visitRec(art *Art, ip string) {
-	da := uint(now() / 3600 / 24)
-	a := &ArtVisitDetail{
-		Aid:  art.ID,
-		Ip:   ip,
-		Date: da,
-	}
-	db.Where(a).FirstOrCreate(a)
-	db.Model(a).Update("count", a.Count+1)
-	db.Model(art).Update("read", art.Read+1)
+type AccessLog struct {
+	ID   uint   `gorm:"primarykey" json:"id"`
+	Ip   string `gorm:"index`
+	Date int64
+	From string
+	Path string
+	UA   string
 }
 
 type BlCAche struct {
@@ -525,5 +514,5 @@ func dbInit() {
 	db.AutoMigrate(&Author{})
 	db.AutoMigrate(&Comment{})
 	db.AutoMigrate(&Guest{})
-	db.AutoMigrate(&ArtVisitDetail{})
+	db.AutoMigrate(&AccessLog{})
 }

@@ -47,12 +47,12 @@ func Run() {
 		ctx.StatusCode(200)
 		_, _ = ctx.WriteString(k)
 	})
-	app.Post("/auth", auth(nil))
-	app.Get("/ot", auth(func(ctx iris.Context) {
+	auth(app.Post, "/auth", nil)
+	auth(app.Get, "/ot", func(ctx iris.Context) {
 		sys.Token = ""
 		ctx.StatusCode(200)
 		setSession(ctx, "")
-	}))
+	})
 	initSettingApi(app)
 	initArtApi(app)
 	initTagsApi(app)
@@ -60,6 +60,7 @@ func Run() {
 	initHisApi(app)
 	initBlackList(app)
 	initCmApi(app)
+	app.UseRouter(logAccess)
 	_ = app.Run(iris.Addr(errCfg.Bind), iris.WithConfiguration(iris.Configuration{
 		RemoteAddrHeaders: []string{"X-Real-Ip"},
 	}))

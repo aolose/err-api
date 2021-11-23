@@ -14,15 +14,15 @@ func initArtApi(app *iris.Application) {
 	posts.Get("/{page}", getPosst)
 
 	edit := app.Party("/edit")
-	edit.Get("/{page}", auth(getEdits))
+	auth(edit.Get, "/{page}", getEdits)
 	// save
-	edit.Put("/", auth(savArt))
+	auth(edit.Put, "/", savArt)
 	//publish
-	edit.Post("/", auth(artPub))
+	auth(edit.Post, "/", artPub)
 	// unpublish
-	edit.Patch("/{id}", auth(unPub))
+	auth(edit.Patch, "/{id}", unPub)
 	// del
-	edit.Delete("/{id}", auth(delArt))
+	auth(edit.Delete, "/{id}", delArt)
 }
 
 func getPosst(ctx iris.Context) {
@@ -96,10 +96,6 @@ func getPost(ctx iris.Context) {
 		pp := p.PubArt
 		pp.AID = p.ID
 		ctx.JSON(pp)
-		ip := getIP(ctx)
-		addJob(func() {
-			visitRec(p, ip)
-		})
 	} else {
 		handleErr(ctx, err)
 	}

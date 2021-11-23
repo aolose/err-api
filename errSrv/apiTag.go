@@ -4,7 +4,7 @@ import "github.com/kataras/iris/v12"
 
 func initTagsApi(app *iris.Application) {
 	tag := app.Party("/tag")
-	tag.Get("/ls", auth(getTags))
+	auth(tag.Get, "/ls", getTags)
 	tag.Get("/all", getTags2)
 	tag.Get("/{name}/{page}", getTagArt)
 }
@@ -12,7 +12,7 @@ func initTagsApi(app *iris.Application) {
 func getTags(ctx iris.Context) {
 	tg := make([]string, len(tagsCache))
 	i := 0
-	for k, _ := range tagsCache {
+	for k := range tagsCache {
 		tg[i] = k
 		i++
 	}

@@ -13,6 +13,31 @@ func getIP(ctx iris.Context) string {
 	return strings.Split(ip, ":")[0]
 }
 
+func logAccess(c iris.Context) {
+	c.Next()
+	p := c.GetCurrentRoute().Tmpl().Src
+	// skip auth path
+	for _, a := range authPaths {
+		if a == p {
+			return
+		}
+	}
+	ip := getIP(c)
+	if c.Method() != "OPTIONS" && ip != "127.0.0.1" {
+		ag := c.GetHeader("User-Agent")
+		if ag == "node-fetch" {
+			ag = c.GetHeader("node-user-agent")
+		}
+		db.Create(&AccessLog{
+			Ip:   ip,
+			Date: now(),
+			Path: c.Path(),
+			From: getCity(ip),
+			UA:   c.GetHeader("User-Agent"),
+		})
+	}
+}
+
 func allowCors(app *iris.Application) {
 	app.UseRouter(func(ctx iris.Context) {
 		if blackCache.has(getIP(ctx)) {
