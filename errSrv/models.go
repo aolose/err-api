@@ -17,12 +17,13 @@ type Notice struct {
 }
 
 type AccessLog struct {
-	ID   uint   `gorm:"primarykey" json:"id"`
-	Ip   string `gorm:"index`
-	Date int64
-	From string
-	Path string
-	UA   string
+	ID    uint   `gorm:"primarykey" json:"k"`
+	Ip    string `gorm:"index" json:"i"`
+	Saved int64  `json:"s"`
+	Date  int64  `json:"-"`
+	From  string `json:"f"`
+	Path  string `json:"p"`
+	UA    string `json:"u"`
 }
 
 type BlCAche struct {
@@ -104,12 +105,13 @@ func (bc *BlCAche) has(ip string) bool {
 }
 
 type BlackList struct {
-	ID     uint   `gorm:"primarykey" json:"id"`
-	Saved  int64  `json:"saved"`
-	IP     string `json:"ip"`
-	Type   int    `json:"type"`
-	Life   int64  `json:"life"`
-	Reason string `json:"reason"`
+	ID     uint   `gorm:"primarykey" json:"k"`
+	Saved  int64  `json:"s"`
+	IP     string `json:"i"`
+	From   string `json:"f"`
+	Type   int    `json:"t"`
+	Life   int64  `json:"l"`
+	Reason string `json:"r"`
 }
 
 const (

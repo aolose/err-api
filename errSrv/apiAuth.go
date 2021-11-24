@@ -110,6 +110,7 @@ func login(ctx iris.Context, s string) {
 				ctx.StatusCode(403)
 				bm.add(&BlackList{
 					IP:   ip,
+					From: getCity(ip),
 					Type: BkLogin,
 				})
 				delete(cliMap, ip)

@@ -112,7 +112,7 @@ type ListResult struct {
 func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.Context) {
 	return func(ctx iris.Context) {
 		page := ctx.Params().GetIntDefault("page", 1)
-		count := ctx.URLParamIntDefault("count", 20)
+		count := ctx.URLParamIntDefault("c", 20)
 		q := make([]string, 0)
 		qs := make([]interface{}, 0)
 		noQ := true
@@ -148,7 +148,7 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.C
 			}
 			tx.Count(&c)
 		}
-		tx = tx.Order("saved desc")
+		tx1 = tx1.Order("saved desc")
 		re := &ListResult{
 			Cur:   page,
 			Total: (int(c) + count - 1) / count,
@@ -157,12 +157,21 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.C
 		switch table.(type) {
 		case Notice:
 			res := make([]Notice, 0)
-			err = tx.Find(&res).Error
+			err = tx1.Find(&res).Error
+			re.List = res
+		case AccessLog:
+			res := make([]AccessLog, 0)
+			err = tx1.Find(&res).Error
+			for n, r := range res {
+				if r.Saved == 0 {
+					res[n].Saved = r.Date
+				}
+			}
 			re.List = res
 		case Comment:
 			res := make([]Comment, 0)
 			art := make([]Art, 0)
-			err = tx.Find(&res).Error
+			err = tx1.Find(&res).Error
 			if err == nil {
 				ids := make([]uint, len(res))
 				for n, i := range res {
@@ -190,7 +199,7 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.C
 			re.List = res
 		case BlackList:
 			res := make([]BlackList, 0)
-			err = tx.Find(&res).Error
+			err = tx1.Find(&res).Error
 			re.List = res
 		}
 		if err != nil {

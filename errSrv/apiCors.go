@@ -29,12 +29,13 @@ func logAccess(c iris.Context) {
 			ag = c.GetHeader("node-user-agent")
 		}
 		db.Create(&AccessLog{
-			Ip:   ip,
-			Date: now(),
-			Path: c.Path(),
-			From: getCity(ip),
-			UA:   c.GetHeader("User-Agent"),
+			Ip:    ip,
+			Saved: now(),
+			Path:  c.Path(),
+			From:  getCity(ip),
+			UA:    c.GetHeader("User-Agent"),
 		})
+		totalLogs++
 	}
 }
 
@@ -87,10 +88,10 @@ func allowCors(app *iris.Application) {
 			if origin == errCfg.Domain || ua == "node-fetch" || origin == "null" {
 				ctx.Header("Access-Control-Allow-Origin", origin)
 				ctx.Header("Access-Control-Allow-Credentials", "true")
-				ctx.Header("Access-Control-Allow-Headers", "token")
+				ctx.Header("Access-Control-Allow-Headers", "token, cache-control")
+				ctx.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+				ctx.Header("Access-Control-Max-Age", "86400")
 				if ctx.Method() == iris.MethodOptions {
-					ctx.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS")
-					ctx.Header("Access-Control-Max-Age", "86400")
 					ctx.StatusCode(204)
 				} else {
 					ctx.Next()

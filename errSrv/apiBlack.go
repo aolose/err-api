@@ -8,6 +8,7 @@ import (
 
 var bm = &BKManager{}
 var totalBL int64
+var totalLogs int64
 
 var geoCache = make(map[string]string)
 
@@ -28,18 +29,20 @@ func getCity(ip string) string {
 }
 
 func initBlackList(app *iris.Application) {
+	syncTotal("access_logs", &totalLogs)
 	syncTotal("black_lists", &totalBL)
 	geoDb, _ = geoip2.Open("geo.mmdb")
 	blackCache = &BlCAche{}
 	blackCache.load()
 	bk := app.Party("/bk")
-	auth(bk.Get, "/{page}", pageQuery(BlackList{}, &totalBL, "ip", "tp"))
+	log := app.Party("/log")
+	auth(log.Get, "/{page}", pageQuery(AccessLog{}, &totalLogs, "ip%", "%from%", "path%", "%ua%"))
+	auth(bk.Get, "/{page}", pageQuery(BlackList{}, &totalBL, "ip", "type"))
 	bk.Post("/", bkSave)
 	bk.Delete("/{id}", bkDel)
 }
 
 func bkSave(ctx iris.Context) {
-
 	syncTotal("black_lists", &totalBL)
 }
 func bkDel(ctx iris.Context) {
