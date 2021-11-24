@@ -3,6 +3,7 @@ package errSrv
 import (
 	"fmt"
 	"github.com/kataras/iris/v12"
+	"log"
 	"net/url"
 	"regexp"
 	"strings"
@@ -96,6 +97,7 @@ func allowCors(app *iris.Application) {
 					ctx.Next()
 				}
 			} else {
+				log.Printf("Req Host:%s, Cfg Host:  %s", ctx.Host(), errCfg.Host)
 				ctx.StatusCode(403)
 			}
 		}
