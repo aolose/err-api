@@ -40,6 +40,10 @@ bind: 127.0.0.1:8880
 
 #your website address
 domain: http://localhost:3000
+#your website address
+
+#IP:port of  your front web server
+host: localhost:3000
 
 #Admin Account
 #defauult admin/admin

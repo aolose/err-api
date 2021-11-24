@@ -10,10 +10,11 @@ import (
 )
 
 type Cfg struct {
-	Bind   string
-	Domain string
-	User   string
-	Pass   string
+	Bind   string `yaml:"bind"`
+	Domain string `yaml:"domain"`
+	Host   string `yaml:"host"`
+	User   string `yaml:"user"`
+	Pass   string `yaml:"pass"`
 }
 
 func (c *Cfg) Update() {

@@ -84,8 +84,7 @@ func allowCors(app *iris.Application) {
 				}
 			}
 
-			ua := r.Header.Get("User-agent")
-			if origin == errCfg.Domain || ua == "node-fetch" || origin == "null" {
+			if origin == errCfg.Domain || ctx.Host() == errCfg.Host {
 				ctx.Header("Access-Control-Allow-Origin", origin)
 				ctx.Header("Access-Control-Allow-Credentials", "true")
 				ctx.Header("Access-Control-Allow-Headers", "token, cache-control")

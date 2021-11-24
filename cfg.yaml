@@ -1,4 +1,5 @@
-bind: 127.0.0.1:8880
-domain: http://localhost:3000
-user: ""
-pass: ""
+bind: 0.0.0.0:8880
+domain: http://www.test.name
+host: localhost:3000
+user:
+pass:
