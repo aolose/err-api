@@ -1,8 +1,8 @@
 package errSrv
 
 import (
-	"fmt"
 	"github.com/kataras/iris/v12"
+	"log"
 	"net/url"
 	"regexp"
 	"strings"
@@ -54,7 +54,7 @@ func allowCors(app *iris.Application) {
 					origin = u.Scheme + "://" + u.Host
 				}
 			}
-			fmt.Printf("%v \t %v\n", r.Method, r.URL)
+			log.Printf("\"%v \\t %v\\n\" Req Host:%s, Cfg Host:  %s", r.Method, r.URL, ctx.Host(), errCfg.Host)
 			if r.Method == "GET" &&
 				strings.HasPrefix(r.URL.Path, "/r/") {
 				if !strings.HasSuffix(r.URL.Path, ".webp") {
@@ -96,7 +96,6 @@ func allowCors(app *iris.Application) {
 					ctx.Next()
 				}
 			} else {
-				fmt.Printf("Req Host:%s, Cfg Host:  %s", ctx.Host(), errCfg.Host)
 				ctx.StatusCode(403)
 			}
 		}
