@@ -41,12 +41,12 @@ func logAccess(c iris.Context) {
 
 func allowCors(app *iris.Application) {
 	app.UseRouter(func(ctx iris.Context) {
-		log.Printf("Req Host %s", ctx.Host())
 		if blackCache.has(getIP(ctx)) {
 			ctx.StatusCode(403)
 			ctx.WriteString("forbidden ip")
 		} else {
 			r := ctx.Request()
+			log.Printf("==== Host %s", r.Host)
 			origin := r.Header.Get("origin")
 			if origin == "" {
 				rf := r.Referer()
@@ -85,7 +85,7 @@ func allowCors(app *iris.Application) {
 				}
 			}
 
-			if origin == errCfg.Domain || ctx.Host() == errCfg.Host {
+			if origin == errCfg.Domain || r.Host == errCfg.Host {
 				ctx.Header("Access-Control-Allow-Origin", origin)
 				ctx.Header("Access-Control-Allow-Credentials", "true")
 				ctx.Header("Access-Control-Allow-Headers", "token, cache-control")
