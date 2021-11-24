@@ -41,6 +41,7 @@ func logAccess(c iris.Context) {
 
 func allowCors(app *iris.Application) {
 	app.UseRouter(func(ctx iris.Context) {
+		log.Printf("Req %v", ctx)
 		if blackCache.has(getIP(ctx)) {
 			ctx.StatusCode(403)
 			ctx.WriteString("forbidden ip")
@@ -54,7 +55,7 @@ func allowCors(app *iris.Application) {
 					origin = u.Scheme + "://" + u.Host
 				}
 			}
-			log.Printf("\"%v \\t %v\\n\" Req Host:%s, Cfg Host:  %s", r.Method, r.URL, ctx.Host(), errCfg.Host)
+			log.Printf("%v \t %v\n", r.Method, r.URL)
 			if r.Method == "GET" &&
 				strings.HasPrefix(r.URL.Path, "/r/") {
 				if !strings.HasSuffix(r.URL.Path, ".webp") {
