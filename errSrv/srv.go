@@ -3,6 +3,7 @@ package errSrv
 import (
 	"fmt"
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/middleware/recover"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -37,6 +38,7 @@ func Run() {
 		}
 	}()
 	app := iris.New()
+	app.UseRouter(recover.New())
 	allowCors(app)
 	app.OnAnyErrorCode(func(ctx iris.Context) {
 		r := ctx.Request()
