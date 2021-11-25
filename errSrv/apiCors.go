@@ -46,6 +46,7 @@ func allowCors(app *iris.Application) {
 			ctx.WriteString("forbidden ip")
 		} else {
 			r := ctx.Request()
+			log.Printf("%s", r.Header)
 			origin := r.Header.Get("origin")
 			if origin == "" {
 				rf := r.Referer()
