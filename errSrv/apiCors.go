@@ -1,6 +1,7 @@
 package errSrv
 
 import (
+	"fmt"
 	"github.com/kataras/iris/v12"
 	"log"
 	"net"
@@ -61,8 +62,9 @@ func allowCors(app *iris.Application) {
 		} else {
 			r := ctx.Request()
 			origin := r.Header.Get("origin")
-			if origin == "" {
+			if origin == "" || origin == "null" {
 				rf := r.Referer()
+				fmt.Printf("origin: %s  refer: %s \n", origin, rf)
 				if len(rf) > 10 {
 					u, _ := url.Parse(rf)
 					origin = u.Scheme + "://" + u.Host
