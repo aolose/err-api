@@ -1,7 +1,6 @@
 package errSrv
 
 import (
-	"fmt"
 	"github.com/kataras/iris/v12"
 	"log"
 	"net"
@@ -62,9 +61,8 @@ func allowCors(app *iris.Application) {
 		} else {
 			r := ctx.Request()
 			origin := r.Header.Get("origin")
-			if origin == "" || origin == "null" {
+			if origin == "" {
 				rf := r.Referer()
-				fmt.Printf("origin: %s  refer: %s \n", origin, rf)
 				if len(rf) > 10 {
 					u, _ := url.Parse(rf)
 					origin = u.Scheme + "://" + u.Host
@@ -100,8 +98,10 @@ func allowCors(app *iris.Application) {
 				}
 			}
 
-			if origin == errCfg.Domain || errCfg.Host == gIP(r.RemoteAddr) {
-				ctx.Header("Access-Control-Allow-Origin", errCfg.Domain)
+			if origin == errCfg.Domain ||
+				errCfg.Host == gIP(r.RemoteAddr) ||
+				(sys.Token != "" && sys.Token == ctx.GetHeader("token")) {
+				ctx.Header("Access-Control-Allow-Origin", ctx.GetHeader("origin"))
 				ctx.Header("Access-Control-Allow-Credentials", "true")
 				ctx.Header("Access-Control-Allow-Headers", "token, cache-control")
 				ctx.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
