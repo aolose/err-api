@@ -3,13 +3,20 @@ package errSrv
 import (
 	"github.com/kataras/iris/v12"
 	"log"
+	"net"
 	"net/url"
 	"regexp"
 	"strings"
 )
 
 func gIP(str string) string {
-	return strings.Split(str, ":")[0]
+	addr := strings.TrimSpace(str)
+	if addr != "" {
+		if k, _, err := net.SplitHostPort(addr); err == nil {
+			return k
+		}
+	}
+	return addr
 }
 
 func getIP(ctx iris.Context) string {
@@ -49,7 +56,6 @@ func allowCors(app *iris.Application) {
 			ctx.WriteString("forbidden ip")
 		} else {
 			r := ctx.Request()
-			log.Printf("raw remote addr%s", r.RemoteAddr)
 			origin := r.Header.Get("origin")
 			if origin == "" {
 				rf := r.Referer()
@@ -100,6 +106,7 @@ func allowCors(app *iris.Application) {
 					ctx.Next()
 				}
 			} else {
+				log.Printf("403: %s %s", r.Host, gIP(r.RemoteAddr))
 				ctx.StatusCode(403)
 			}
 		}
