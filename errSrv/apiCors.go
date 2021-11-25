@@ -94,7 +94,7 @@ func allowCors(app *iris.Application) {
 				}
 			}
 
-			if origin == errCfg.Domain || r.Host == gIP(r.RemoteAddr) {
+			if origin == errCfg.Domain || errCfg.Host == gIP(r.RemoteAddr) {
 				ctx.Header("Access-Control-Allow-Origin", errCfg.Domain)
 				ctx.Header("Access-Control-Allow-Credentials", "true")
 				ctx.Header("Access-Control-Allow-Headers", "token, cache-control")
@@ -106,7 +106,7 @@ func allowCors(app *iris.Application) {
 					ctx.Next()
 				}
 			} else {
-				log.Printf("403: %s %s", r.Host, gIP(r.RemoteAddr))
+				log.Printf("403: %s %s", errCfg.Host, gIP(r.RemoteAddr))
 				ctx.StatusCode(403)
 			}
 		}
