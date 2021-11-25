@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 var ml = 0
@@ -242,26 +241,16 @@ func msg(ctx iris.Context) {
 	if strings.Contains(ctx.GetHeader("accept"), "text/event-stream") {
 		flusher, ok := ctx.ResponseWriter().Flusher()
 		if !ok {
+			ctx.StopWithText(iris.StatusHTTPVersionNotSupported, "Streaming unsupported!")
 			return
 		}
 		ctx.ContentType("text/event-stream")
 		ctx.Header("Cache-Control", "no-cache")
-		go func() {
-			flusher.Flush()
-			time.Sleep(time.Second * 3)
-		}()
-		for {
-			if ctx.IsCanceled() {
-				break
-			}
-			c := getMsg()
-			if c != "" {
-				_, _ = ctx.Writef("data: %s\n\n", c)
-			} else {
-				time.Sleep(time.Millisecond * 500)
-			}
-			flusher.Flush()
+		c := getMsg()
+		if c != "" {
+			_, _ = ctx.Writef("data: %s\n\n", c)
 		}
+		flusher.Flush()
 	} else {
 		ctx.StatusCode(404)
 	}

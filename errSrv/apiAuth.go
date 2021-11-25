@@ -161,10 +161,8 @@ func addToAuthPath(s string) {
 func authHandler(next iris.Handler) func(ctx iris.Context) {
 	return func(ctx iris.Context) {
 		pass := false
-		var err error
 		if next == nil {
-			b, er := ctx.GetBody()
-			err = er
+			b, err := ctx.GetBody()
 			if err == nil {
 				s := string(b)
 				if len(s) > 10 {
@@ -178,6 +176,8 @@ func authHandler(next iris.Handler) func(ctx iris.Context) {
 						}
 					}
 				}
+			} else {
+				handleErr(ctx, err)
 			}
 		} else {
 			ck := ctx.GetCookie("session_id")
@@ -194,8 +194,6 @@ func authHandler(next iris.Handler) func(ctx iris.Context) {
 			nextTokenCleanDelay()
 			if next != nil {
 				next(ctx)
-			} else {
-				handleErr(ctx, err)
 			}
 		}
 	}
