@@ -25,10 +25,14 @@ func getIP(ctx iris.Context) string {
 
 func logAccess(c iris.Context) {
 	c.Next()
-	p := c.GetCurrentRoute().Tmpl().Src
+	p := c.GetCurrentRoute()
+	if p == nil {
+		log.Printf("Access no router matched: %s \n", c.Path())
+		return
+	}
 	// skip auth path
 	for _, a := range authPaths {
-		if a == p {
+		if a == p.Tmpl().Src {
 			return
 		}
 	}
