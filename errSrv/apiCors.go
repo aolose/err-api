@@ -46,7 +46,6 @@ func allowCors(app *iris.Application) {
 			ctx.WriteString("forbidden ip")
 		} else {
 			r := ctx.Request()
-			log.Printf("==== Host %s", r.Host)
 			origin := r.Header.Get("origin")
 			if origin == "" {
 				rf := r.Referer()
@@ -86,7 +85,7 @@ func allowCors(app *iris.Application) {
 			}
 
 			if origin == errCfg.Domain || r.Host == errCfg.Host {
-				ctx.Header("Access-Control-Allow-Origin", origin)
+				ctx.Header("Access-Control-Allow-Origin", errCfg.Domain)
 				ctx.Header("Access-Control-Allow-Credentials", "true")
 				ctx.Header("Access-Control-Allow-Headers", "token, cache-control")
 				ctx.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
