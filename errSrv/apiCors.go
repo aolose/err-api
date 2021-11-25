@@ -8,9 +8,12 @@ import (
 	"strings"
 )
 
+func gIP(str string) string {
+	return strings.Split(str, ":")[0]
+}
+
 func getIP(ctx iris.Context) string {
-	ip := ctx.RemoteAddr()
-	return strings.Split(ip, ":")[0]
+	return gIP(ctx.RemoteAddr())
 }
 
 func logAccess(c iris.Context) {
@@ -46,7 +49,7 @@ func allowCors(app *iris.Application) {
 			ctx.WriteString("forbidden ip")
 		} else {
 			r := ctx.Request()
-			log.Printf("%s", r.Header)
+			log.Printf("raw remote addr%s", r.RemoteAddr)
 			origin := r.Header.Get("origin")
 			if origin == "" {
 				rf := r.Referer()
@@ -85,7 +88,7 @@ func allowCors(app *iris.Application) {
 				}
 			}
 
-			if origin == errCfg.Domain || r.Host == errCfg.Host {
+			if origin == errCfg.Domain || r.Host == gIP(r.RemoteAddr) {
 				ctx.Header("Access-Control-Allow-Origin", errCfg.Domain)
 				ctx.Header("Access-Control-Allow-Credentials", "true")
 				ctx.Header("Access-Control-Allow-Headers", "token, cache-control")
