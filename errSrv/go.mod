@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/h2non/bimg v1.1.5
 	github.com/h2non/filetype v1.1.1
+	github.com/ip2location/ip2location-go/v9 v9.2.0
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/kataras/iris/v12 v12.2.0-alpha2
 	github.com/klauspost/compress v1.13.4 // indirect
@@ -17,9 +18,9 @@ require (
 	github.com/mozillazg/go-slugify v0.2.0
 	github.com/mozillazg/go-unidecode v0.1.1 // indirect
 	github.com/onsi/gomega v1.15.0 // indirect
-	github.com/oschwald/geoip2-golang v1.5.0
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4 // indirect
+	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect

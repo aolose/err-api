@@ -1,9 +1,8 @@
 package errSrv
 
 import (
+	"github.com/ip2location/ip2location-go/v9"
 	"github.com/kataras/iris/v12"
-	"github.com/oschwald/geoip2-golang"
-	"net"
 )
 
 var bm = &BKManager{}
@@ -12,17 +11,16 @@ var totalLogs int64
 
 var geoCache = make(map[string]string)
 
-var geoDb *geoip2.Reader
+var geoDb *ip2location.DB
 
 func getCity(ip string) string {
 	if geoDb != nil {
 		if c, ok := geoCache[ip]; ok {
 			return c
 		}
-		p := net.ParseIP(ip)
-		rec, err := geoDb.City(p)
+		rec, err := geoDb.Get_all(ip)
 		if err == nil {
-			return rec.Country.Names["en"] + "\t" + rec.City.Names["en"]
+			return rec.Country_long + "\t" + rec.City
 		}
 	}
 	return ""
@@ -31,7 +29,7 @@ func getCity(ip string) string {
 func initBlackList(app *iris.Application) {
 	syncTotal("access_logs", &totalLogs)
 	syncTotal("black_lists", &totalBL)
-	geoDb, _ = geoip2.Open("geo.mmdb")
+	geoDb, _ = ip2location.OpenDB("geo.bin")
 	blackCache = &BlCAche{}
 	blackCache.load()
 	bk := app.Party("/bk")
