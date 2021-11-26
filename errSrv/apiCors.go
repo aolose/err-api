@@ -46,7 +46,6 @@ func logAccess(c iris.Context) {
 			Ip:    ip,
 			Saved: now(),
 			Path:  c.Path(),
-			From:  getCity(ip),
 			UA:    c.GetHeader("User-Agent"),
 		})
 		totalLogs++

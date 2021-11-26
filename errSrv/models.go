@@ -21,7 +21,7 @@ type AccessLog struct {
 	Ip    string `gorm:"index" json:"i"`
 	Saved int64  `json:"s"`
 	Date  int64  `json:"-"`
-	From  string `json:"f"`
+	From  string `gorm:"-"  json:"f"`
 	Path  string `json:"p"`
 	UA    string `json:"u"`
 }
@@ -108,7 +108,7 @@ type BlackList struct {
 	ID     uint   `gorm:"primarykey" json:"k"`
 	Saved  int64  `json:"s"`
 	IP     string `json:"i"`
-	From   string `json:"f"`
+	From   string `gorm:"-" json:"f"`
 	Type   int    `json:"t"`
 	Life   int64  `json:"l"`
 	Reason string `json:"r"`

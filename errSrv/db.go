@@ -163,6 +163,7 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.C
 			res := make([]AccessLog, 0)
 			err = tx1.Find(&res).Error
 			for n, r := range res {
+				res[n].From = getCity(r.Ip)
 				if r.Saved == 0 {
 					res[n].Saved = r.Date
 				}
@@ -200,6 +201,9 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.C
 		case BlackList:
 			res := make([]BlackList, 0)
 			err = tx1.Find(&res).Error
+			for n, r := range res {
+				res[n].From = r.IP
+			}
 			re.List = res
 		}
 		if err != nil {
