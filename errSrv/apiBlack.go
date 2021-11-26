@@ -20,7 +20,9 @@ func getCity(ip string) string {
 		}
 		rec, err := geoDb.Get_all(ip)
 		if err == nil {
-			return rec.Country_long + "\t" + rec.City
+			ct := rec.City + ", " + rec.Country_short
+			geoCache[ip] = ct
+			return ct
 		}
 	}
 	return ""
