@@ -1,6 +1,7 @@
 package errSrv
 
 import "github.com/kataras/iris/v12"
+import "github.com/kataras/iris/v12/context"
 
 func initSettingApi(app *iris.Application) {
 	sit := app.Party("/sys")
@@ -8,7 +9,7 @@ func initSettingApi(app *iris.Application) {
 	auth(sit.Post, "/acc", setAcc)
 }
 
-func setAcc(ctx iris.Context) {
+func setAcc(ctx *context.Context) {
 	b, err := ctx.GetBody()
 	if err == nil {
 		usr, pwd, er := upk(string(b))
@@ -23,6 +24,6 @@ func setAcc(ctx iris.Context) {
 	}
 	handleErr(ctx, err)
 }
-func sysInfo(ctx iris.Context) {
+func sysInfo(ctx *context.Context) {
 	ctx.JSON(sys)
 }

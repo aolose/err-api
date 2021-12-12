@@ -2,6 +2,7 @@ package errSrv
 
 import (
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/context"
 	"log"
 	"net"
 	"net/url"
@@ -23,7 +24,7 @@ func getIP(ctx iris.Context) string {
 	return gIP(ctx.RemoteAddr())
 }
 
-func logAccess(c iris.Context) {
+func logAccess(c *context.Context) {
 	c.Next()
 	p := c.GetCurrentRoute()
 	if p == nil {
@@ -38,12 +39,16 @@ func logAccess(c iris.Context) {
 	}
 	ip := getIP(c)
 	if c.Method() != "OPTIONS" && ip != "127.0.0.1" {
+		if firewall(c, SkipLog) {
+			return
+		}
 		ag := c.GetHeader("User-Agent")
 		if ag == "node-fetch" {
 			ag = c.GetHeader("node-user-agent")
 		}
 		db.Create(&AccessLog{
 			Ip:    ip,
+			Refer: c.GetReferrer().String(),
 			Saved: now(),
 			Path:  c.Path(),
 			UA:    c.GetHeader("User-Agent"),
@@ -53,10 +58,10 @@ func logAccess(c iris.Context) {
 }
 
 func allowCors(app *iris.Application) {
-	app.UseRouter(func(ctx iris.Context) {
-		if blackCache.has(getIP(ctx)) {
+	app.UseRouter(func(ctx *context.Context) {
+		if firewall(ctx, BlockAccess) {
 			ctx.StatusCode(403)
-			ctx.WriteString("forbidden ip")
+			ctx.WriteString("access forbidden")
 		} else {
 			r := ctx.Request()
 			origin := r.Header.Get("origin")

@@ -1,11 +1,118 @@
 package errSrv
 
 import (
+	"github.com/kataras/iris/v12/context"
 	"math/rand"
-	"sort"
+	"net"
 	"strconv"
 	"strings"
 )
+
+// FirewallRule State
+// 0001 - skip log
+// 0010 - block comment
+// 0100 - block access
+type FirewallRule struct {
+	ID     uint   `gorm:"primarykey" json:"id"`
+	IP     string `json:"ip"`
+	Path   string `json:"pa"`
+	UA     string `json:"ua"`
+	Refer  string `json:"rf"`
+	Saved  int64  `json:"sv"`
+	State  int    `json:"st"`
+	Active bool   `json:"at"`
+	Remark string `json:"rk"`
+	TmpID  int64  `json:"ti" gorm:"-"`
+}
+
+const (
+	SkipLog = 1 << iota
+	BlockLogin
+	BlockComment
+	BlockAccess
+)
+
+func parseCtx(c *context.Context) (net.IP, string, string, string) {
+	return net.ParseIP(getIP(c)),
+		strings.ToLower(c.Path()),
+		strings.ToLower(c.GetHeader("User-Agent")),
+		strings.ToLower(c.GetReferrer().String())
+}
+
+func firewall(c *context.Context, state int) bool {
+	ip, path, ua, refer := parseCtx(c)
+	for _, filter := range firewallRules {
+		if filter.Active &&
+			(filter.hasIp(ip)|
+				filter.hasUA(ua)|
+				filter.hasRefer(refer)|
+				filter.hasPath(path)) == 1 &&
+			(filter.State&state) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (f *FirewallRule) hasIp(p net.IP) int {
+	if f.IP != "" {
+		_, subnet, _ := net.ParseCIDR(f.IP)
+		if subnet != nil && subnet.Contains(p) {
+			return 1
+		} else {
+			if p.Equal(net.ParseIP(f.IP)) {
+				return 1
+			}
+		}
+		return -1
+	}
+	return 0
+}
+
+func (f *FirewallRule) hasPath(path string) int {
+	if f.Path != "" {
+		if strings.HasPrefix(strings.ToLower(path), f.Path) {
+			return 1
+		}
+		return -1
+	}
+	return 0
+}
+func (f *FirewallRule) hasRefer(refer string) int {
+	if f.Refer != "" {
+		if strings.Contains(strings.ToLower(refer), f.Refer) {
+			return 1
+		}
+		return -1
+	}
+	return 0
+}
+func (f *FirewallRule) hasUA(ua string) int {
+	if f.UA != "" {
+		if strings.Contains(strings.ToLower(ua), f.UA) {
+			return 1
+		}
+		return -1
+	}
+	return 0
+}
+
+func BlockIpTemporary(ip string) {
+	for _, filter := range firewallRules {
+		if filter.Active &&
+			filter.hasIp(net.ParseIP(ip)) == 1 &&
+			filter.State&BlockLogin > 0 {
+			return
+		}
+	}
+	firewallRules = append(firewallRules, &FirewallRule{
+		TmpID:  rand.Int63n(1e10),
+		IP:     ip,
+		Saved:  now(),
+		Active: true,
+		State:  BlockLogin,
+	})
+}
 
 type Notice struct {
 	ID   uint   `gorm:"primarykey" json:"i"`
@@ -21,87 +128,10 @@ type AccessLog struct {
 	Ip    string `gorm:"index" json:"i"`
 	Saved int64  `json:"s"`
 	Date  int64  `json:"-"`
+	Refer string `json:"r"`
 	From  string `gorm:"-"  json:"f"`
 	Path  string `json:"p"`
 	UA    string `json:"u"`
-}
-
-type BlCAche struct {
-	idx []int
-	ips [][]string
-}
-
-var blackCache *BlCAche
-
-func (bc *BlCAche) add(ip string) *[]string {
-	l0 := len(ip)
-	l := len(bc.idx)
-	for i := 0; i < l; i++ {
-		if bc.idx[i] == l0 {
-			bc.ips[i] = append(bc.ips[i], ip)
-			return &bc.ips[i]
-		}
-	}
-	bc.idx = append(bc.idx, l0)
-	bc.ips = append(bc.ips, []string{ip})
-	return nil
-}
-func (bc *BlCAche) rm(ip string) {
-	l0 := len(ip)
-	l := len(bc.idx)
-	for i := 0; i < l; i++ {
-		if bc.idx[i] == l0 {
-			for n, p := range bc.ips[i] {
-				if p == ip {
-					a := bc.ips[n:]
-					bc.ips = bc.ips[:n-1]
-					for _, v := range a {
-						bc.ips = append(bc.ips, v)
-					}
-					return
-				}
-			}
-			return
-		}
-	}
-}
-
-func (bc *BlCAche) load() {
-	bk := make([]BlackList, 0)
-	db.Find(&bk)
-	for _, b := range bk {
-		bc.add(b.IP)
-	}
-	for _, p := range bc.ips {
-		sort.Strings(p)
-	}
-}
-
-func (bc *BlCAche) has(ip string) bool {
-	l := len(ip)
-	l1 := len(bc.idx)
-	for i := 0; i < l1; i++ {
-		if bc.idx[i] == l {
-			ls := bc.ips[i]
-			l2 := len(ls)
-			s := 0
-			e := l2
-			for n := l2 / 2; n >= s && n < e && e > s; {
-				v := ls[n]
-				if v == ip {
-					return true
-				}
-				if v > ip {
-					s = n + 1
-					n = (s + e) / 2
-				} else {
-					e = n
-					n = (s + e) / 2
-				}
-			}
-		}
-	}
-	return false
 }
 
 type BlackList struct {
@@ -112,31 +142,6 @@ type BlackList struct {
 	Type   int    `json:"t"`
 	Life   int64  `json:"l"`
 	Reason string `json:"r"`
-}
-
-const (
-	BkComment = 1 << iota
-	BkLogin
-)
-
-func isBKType(t int) bool {
-	return 0b110&t != 0
-}
-
-type BKManager []BlackList
-
-func (b *BKManager) add(bl *BlackList) {
-	bl.Saved = now()
-	db.Create(bl)
-	s := blackCache.add(bl.IP)
-	if s != nil {
-		sort.Strings(*s)
-	}
-}
-
-func (b *BKManager) rm(id int) {
-	db.Delete(&BlackList{}, id)
-	blackCache.load()
 }
 
 type ListPubPost struct {
@@ -517,4 +522,5 @@ func dbInit() {
 	db.AutoMigrate(&Comment{})
 	db.AutoMigrate(&Guest{})
 	db.AutoMigrate(&AccessLog{})
+	db.AutoMigrate(&FirewallRule{})
 }

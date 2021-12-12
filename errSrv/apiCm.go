@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/google/uuid"
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/context"
 	"regexp"
 	"strconv"
 	"strings"
@@ -31,7 +32,7 @@ type CMLs struct {
 	Total int       `json:"total"`
 }
 
-func cmLs(ctx iris.Context) {
+func cmLs(ctx *context.Context) {
 	pms := ctx.Params()
 	page := pms.GetIntDefault("page", 1)
 	id := pms.GetUintDefault("id", 0)
@@ -95,7 +96,7 @@ func cmLs(ctx iris.Context) {
 	}
 }
 
-func cmList(ctx iris.Context) {
+func cmList(ctx *context.Context) {
 
 }
 
@@ -103,7 +104,7 @@ func countCm() {
 	syncTotal("comments", &totalCm)
 }
 
-func cmCreate(ctx iris.Context) {
+func cmCreate(ctx *context.Context) {
 	ck := ctx.GetCookie("cm_tk")
 	var err error
 	if sys.DisCm == 1 {
@@ -186,11 +187,11 @@ func cmCreate(ctx iris.Context) {
 	}
 }
 
-func cmOpt(ctx iris.Context) {
+func cmOpt(ctx *context.Context) {
 
 }
 
-func cmDel2(ctx iris.Context) {
+func cmDel2(ctx *context.Context) {
 	ck := ctx.GetCookie("cm_tk")
 	id, err := ctx.Params().GetUint("id")
 	if err == nil && id > 0 && ck != "" {
@@ -198,7 +199,7 @@ func cmDel2(ctx iris.Context) {
 	}
 	handleErr(ctx, err)
 }
-func cmDel(ctx iris.Context) {
+func cmDel(ctx *context.Context) {
 	id := ctx.URLParam("id")
 	if id == "" {
 		ctx.StatusCode(200)

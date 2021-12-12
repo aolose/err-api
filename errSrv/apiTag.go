@@ -1,6 +1,7 @@
 package errSrv
 
 import "github.com/kataras/iris/v12"
+import "github.com/kataras/iris/v12/context"
 
 func initTagsApi(app *iris.Application) {
 	tag := app.Party("/tag")
@@ -9,7 +10,7 @@ func initTagsApi(app *iris.Application) {
 	tag.Get("/{name}/{page}", getTagArt)
 }
 
-func getTags(ctx iris.Context) {
+func getTags(ctx *context.Context) {
 	tg := make([]string, len(tagsCache))
 	i := 0
 	for k := range tagsCache {
@@ -20,7 +21,7 @@ func getTags(ctx iris.Context) {
 	ctx.JSON(tg)
 }
 
-func getTags2(ctx iris.Context) {
+func getTags2(ctx *context.Context) {
 	var gs []Tag
 	err := db.Find(&gs).Error
 	if err == nil {
@@ -31,7 +32,7 @@ func getTags2(ctx iris.Context) {
 	}
 }
 
-func getTagArt(ctx iris.Context) {
+func getTagArt(ctx *context.Context) {
 	page := ctx.Params().GetIntDefault("page", 1)
 	name := ctx.Params().GetStringDefault("name", "")
 	count := ctx.URLParamIntDefault("count", 5)

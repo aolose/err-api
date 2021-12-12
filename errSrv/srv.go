@@ -3,6 +3,7 @@ package errSrv
 import (
 	"fmt"
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/context"
 	"github.com/kataras/iris/v12/middleware/recover"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -27,7 +28,6 @@ func (c *Cfg) Update() {
 
 var errCfg Cfg
 
-//const DOMAIN="http://localhost:3000"
 func Run() {
 	go doJobs()
 	go func() {
@@ -40,18 +40,18 @@ func Run() {
 	app := iris.New()
 	app.UseRouter(recover.New())
 	allowCors(app)
-	app.OnAnyErrorCode(func(ctx iris.Context) {
+	app.OnAnyErrorCode(func(ctx *context.Context) {
 		r := ctx.Request()
 		fmt.Printf("Error %v \t %v %v\n", r.Method, r.URL, ctx.GetErr())
 		ctx.Next()
 	})
-	app.Get("/k", func(ctx iris.Context) {
+	app.Get("/k", func(ctx *context.Context) {
 		k := getCli(getIP(ctx)).key
 		ctx.StatusCode(200)
 		_, _ = ctx.WriteString(k)
 	})
 	auth(app.Post, "/auth", nil)
-	auth(app.Get, "/ot", func(ctx iris.Context) {
+	auth(app.Get, "/ot", func(ctx *context.Context) {
 		sys.Token = ""
 		ctx.StatusCode(200)
 		setSession(ctx, "")
@@ -61,7 +61,7 @@ func Run() {
 	initTagsApi(app)
 	initResApi(app)
 	initHisApi(app)
-	initBlackList(app)
+	initFirewall(app)
 	initCmApi(app)
 	app.UseRouter(logAccess)
 	_ = app.Run(iris.Addr(errCfg.Bind), iris.WithConfiguration(iris.Configuration{

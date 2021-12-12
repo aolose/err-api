@@ -2,6 +2,7 @@ package errSrv
 
 import (
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/context"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,7 +26,7 @@ func initArtApi(app *iris.Application) {
 	auth(edit.Delete, "/{id}", delArt)
 }
 
-func getPosst(ctx iris.Context) {
+func getPosst(ctx *context.Context) {
 	page := ctx.Params().GetIntDefault("page", 1)
 	count := ctx.URLParamIntDefault("count", 5)
 	if page == 0 {
@@ -59,7 +60,7 @@ func fixContent(c string) string {
 	return c
 }
 
-func getEdits(ctx iris.Context) {
+func getEdits(ctx *context.Context) {
 	page := ctx.Params().GetIntDefault("page", 1)
 	count := ctx.URLParamIntDefault("count", 20)
 	search := ctx.URLParam("k")
@@ -88,7 +89,7 @@ func getEdits(ctx iris.Context) {
 	ctx.JSON(ls)
 }
 
-func getPost(ctx iris.Context) {
+func getPost(ctx *context.Context) {
 	p := &Art{}
 	err := db.Preload("Author").
 		First(p, "slug = ?", ctx.Params().Get("slug")).Error
@@ -101,7 +102,7 @@ func getPost(ctx iris.Context) {
 	}
 }
 
-func unPub(ctx iris.Context) {
+func unPub(ctx *context.Context) {
 	pa := ctx.Params()
 	id, err := pa.GetUint("id")
 	p := &Art{
@@ -118,7 +119,7 @@ func unPub(ctx iris.Context) {
 	}
 }
 
-func delArt(ctx iris.Context) {
+func delArt(ctx *context.Context) {
 	id, err := ctx.Params().GetUint("id")
 	if err == nil {
 		a := &Art{ID: id}
@@ -141,7 +142,7 @@ func delArt(ctx iris.Context) {
 	}
 }
 
-func savArt(ctx iris.Context) {
+func savArt(ctx *context.Context) {
 	p := &Art{}
 	ctx.ReadJSON(p)
 	err := p.Save()
@@ -155,7 +156,7 @@ func savArt(ctx iris.Context) {
 	}
 }
 
-func artPub(ctx iris.Context) {
+func artPub(ctx *context.Context) {
 	p := &Art{}
 	ctx.ReadJSON(p)
 	v := p.Updated

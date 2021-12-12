@@ -1,6 +1,8 @@
 package errSrv
 
-import "github.com/kataras/iris/v12"
+import (
+	"github.com/kataras/iris/v12"
+)
 
 var totalNotice int64
 

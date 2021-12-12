@@ -75,7 +75,7 @@ func login(ctx iris.Context, s string) {
 	ip := getIP(ctx)
 	c := getCli(ip)
 	n := now()
-	if blackCache.has(ip) {
+	if firewall(ctx, BlockLogin) {
 		delete(cliMap, ip)
 		ctx.StatusCode(403)
 		str(ctx, "forbidden ip")
@@ -107,10 +107,7 @@ func login(ctx iris.Context, s string) {
 		if c.tryTimes == 0 {
 			if c.ticks == 0 {
 				ctx.StatusCode(403)
-				bm.add(&BlackList{
-					IP:   ip,
-					Type: BkLogin,
-				})
+				BlockIpTemporary(ip)
 				delete(cliMap, ip)
 				str(ctx, "forbidden ip")
 			} else {
@@ -157,8 +154,8 @@ func addToAuthPath(s string) {
 	authPaths = append(authPaths, s)
 }
 
-func authHandler(next iris.Handler) func(ctx iris.Context) {
-	return func(ctx iris.Context) {
+func authHandler(next iris.Handler) func(ctx *context.Context) {
+	return func(ctx *context.Context) {
 		pass := false
 		if next == nil {
 			b, err := ctx.GetBody()

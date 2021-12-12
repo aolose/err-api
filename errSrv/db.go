@@ -2,7 +2,7 @@ package errSrv
 
 import (
 	"fmt"
-	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/context"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"log"
@@ -109,8 +109,8 @@ type ListResult struct {
 	Cur   int         `json:"cur"`
 }
 
-func pageQuery(table interface{}, total *int64, field ...string) func(ctx iris.Context) {
-	return func(ctx iris.Context) {
+func pageQuery(table interface{}, total *int64, field ...string) func(ctx *context.Context) {
+	return func(ctx *context.Context) {
 		page := ctx.Params().GetIntDefault("page", 1)
 		count := ctx.URLParamIntDefault("c", 20)
 		q := make([]string, 0)

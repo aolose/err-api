@@ -5,6 +5,7 @@ import (
 	"github.com/h2non/bimg"
 	"github.com/h2non/filetype"
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/context"
 	"gorm.io/gorm/clause"
 	"log"
 	"mime/multipart"
@@ -56,7 +57,7 @@ func initResApi(app *iris.Application) {
 	auth(res.Delete, "/", resDel)
 }
 
-func resCh(ctx iris.Context) {
+func resCh(ctx *context.Context) {
 	pm := ctx.Params()
 	nm := pm.Get("name")
 	id := pm.Get("id")
@@ -64,7 +65,7 @@ func resCh(ctx iris.Context) {
 	handleErr(ctx, err)
 }
 
-func resDel(ctx iris.Context) {
+func resDel(ctx *context.Context) {
 	id := ctx.URLParam("id")
 	if id == "" {
 		ctx.StatusCode(200)
@@ -98,7 +99,7 @@ func wait(fn ...func()) {
 	wg.Wait()
 }
 
-func resLs(ctx iris.Context) {
+func resLs(ctx *context.Context) {
 	pg := ctx.Params().GetIntDefault("page", 1)
 	count := ctx.URLParamIntDefault("c", 20)
 	img := ctx.URLParamIntDefault("img", 0)
@@ -137,7 +138,7 @@ func resLs(ctx iris.Context) {
 	}
 }
 
-func upload(ctx iris.Context) {
+func upload(ctx *context.Context) {
 	ctx.SetMaxRequestBodySize(maxSize)
 	key := ctx.FormValue("key")
 	nm := ctx.FormValue("nm")
@@ -237,7 +238,7 @@ func upload(ctx iris.Context) {
 	countRes()
 }
 
-func msg(ctx iris.Context) {
+func msg(ctx *context.Context) {
 	if strings.Contains(ctx.GetHeader("accept"), "text/event-stream") {
 		flusher, ok := ctx.ResponseWriter().Flusher()
 		if !ok {
