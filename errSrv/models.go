@@ -71,7 +71,7 @@ func (f *FirewallRule) hasIp(p net.IP) int {
 
 func (f *FirewallRule) hasPath(path string) int {
 	if f.Path != "" {
-		if strings.HasPrefix(strings.ToLower(path), f.Path) {
+		if strings.HasPrefix(path, strings.ToLower(f.Path)) {
 			return 1
 		}
 		return -1
@@ -80,7 +80,7 @@ func (f *FirewallRule) hasPath(path string) int {
 }
 func (f *FirewallRule) hasRefer(refer string) int {
 	if f.Refer != "" {
-		if strings.Contains(strings.ToLower(refer), f.Refer) {
+		if strings.Contains(refer, strings.ToLower(f.Refer)) {
 			return 1
 		}
 		return -1
@@ -89,7 +89,7 @@ func (f *FirewallRule) hasRefer(refer string) int {
 }
 func (f *FirewallRule) hasUA(ua string) int {
 	if f.UA != "" {
-		if strings.Contains(strings.ToLower(ua), f.UA) {
+		if strings.Contains(ua, strings.ToLower(f.UA)) {
 			return 1
 		}
 		return -1

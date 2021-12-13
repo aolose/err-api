@@ -16,7 +16,6 @@ func initCmApi(app *iris.Application) {
 	cm := app.Party("c")
 	cm.Post("/", cmCreate)
 	cm.Get("/{id}/{page}", cmLs)
-	auth(cm.Get, "/m/{page}", cmList)
 	auth(cm.Get, "/{page}", pageQuery(Comment{}, &totalCm, "art_id", "%content%"))
 	auth(cm.Delete, "/", cmDel)
 	cm.Delete("/{id}", cmDel2)
@@ -96,15 +95,16 @@ func cmLs(ctx *context.Context) {
 	}
 }
 
-func cmList(ctx *context.Context) {
-
-}
-
 func countCm() {
 	syncTotal("comments", &totalCm)
 }
 
 func cmCreate(ctx *context.Context) {
+	if firewall(ctx, BlockComment) {
+		ctx.StatusCode(403)
+		_, _ = ctx.WriteString("forbidden comment")
+		return
+	}
 	ck := ctx.GetCookie("cm_tk")
 	var err error
 	if sys.DisCm == 1 {
