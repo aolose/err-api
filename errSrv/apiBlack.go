@@ -50,12 +50,12 @@ func initFirewall(app *iris.Application) {
 }
 
 func ftDel(c *context.Context) {
-	id, err := c.Params().GetUint("id")
+	id, err := c.Params().GetInt64("id")
 	if id == 0 {
 		c.StatusCode(200)
 	} else {
 		for i, f := range firewallRules {
-			if f.ID == id {
+			if f.TmpID == id {
 				err = db.Delete(&FirewallRule{}, id).Error
 				if err == nil {
 					firewallRules = append(firewallRules[:i], firewallRules[i+1:]...)
@@ -71,6 +71,7 @@ func ftPost(c *context.Context) {
 	f := &FirewallRule{}
 	err := c.ReadJSON(f)
 	f.ID = 0
+	f.TmpID = rand.Int63n(1e10)
 	f.Saved = now()
 	if err == nil {
 		firewallRules = append(firewallRules, f)
