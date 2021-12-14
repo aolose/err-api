@@ -76,7 +76,7 @@ func ftPost(c *context.Context) {
 	f.TmpID = rand.Int63n(1e10)
 	f.Saved = now()
 	if err == nil {
-		firewallRules = append(firewallRules, f)
+		firewallRules = append([]*FirewallRule{f}, firewallRules...)
 		err = db.Create(f).Error
 	}
 	if err == nil {
