@@ -15,7 +15,9 @@ var geoCache = make(map[string]string)
 var geoDb *ip2location.DB
 
 func syncFirewall() {
-	db.Model(FirewallRule{}).Find(&firewallRules)
+	db.Model(FirewallRule{}).
+		Order("saved desc").
+		Find(&firewallRules)
 	for i := range firewallRules {
 		firewallRules[i].TmpID = rand.Int63n(1e10)
 	}
