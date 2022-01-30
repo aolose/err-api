@@ -11,7 +11,7 @@ require (
 	github.com/h2non/filetype v1.1.1
 	github.com/ip2location/ip2location-go/v9 v9.2.0
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
-	github.com/kataras/iris/v12 v12.2.0-alpha2
+	github.com/kataras/iris/v12 v12.2.0-alpha5
 	github.com/klauspost/compress v1.13.4 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
