@@ -45,6 +45,9 @@ func initFirewall(app *iris.Application) {
 	log := app.Party("/log")
 	ft := app.Party("/ft")
 	auth(log.Get, "/{page}", pageQuery(AccessLog{}, &totalLogs, "ip%", "path%", "%ua%", "%refer%"))
+	auth(log.Get, "/refresh", func(c *context.Context) {
+		syncFirewall()
+	})
 	auth(ft.Get, "", ftGet)
 	auth(ft.Post, "", ftPost)
 	auth(ft.Patch, "", ftPath)

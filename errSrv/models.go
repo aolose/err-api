@@ -255,13 +255,13 @@ type TagArt struct {
 	AID  uint   `gorm:"index" json:"aid"`
 }
 
-type ArtHis struct {
-	ID      uint  `gorm:"primarykey" json:"id"`
-	AID     uint  ` gorm:"index" json:"aid"`
-	Version int64 `gorm:"index" json:"ver"`
-	Content string
-	Title   string
-}
+//type ArtHis struct {
+//	ID      uint  `gorm:"primarykey" json:"id"`
+//	AID     uint  ` gorm:"index" json:"aid"`
+//	Version int64 `gorm:"index" json:"ver"`
+//	Content string
+//	Title   string
+//}
 
 type Art struct {
 	ID             uint   `gorm:"primarykey" json:"id"`
@@ -391,32 +391,33 @@ func (p *Art) Publish() error {
 	p.PubTitle = p.Title
 	p.PubContent = p.Content
 	err = save(p, true)
-	if err == nil {
-		err = db.Create(&ArtHis{
-			AID:     p.ID,
-			Content: p.Content,
-			Title:   p.Title,
-			Version: n,
-		}).Error
-	}
-	addJob(cleanArtHis(p.ID))
+	//todo: rm article his
+	//if err == nil {
+	//	err = db.Create(&ArtHis{
+	//		AID:     p.ID,
+	//		Content: p.Content,
+	//		Title:   p.Title,
+	//		Version: n,
+	//	}).Error
+	//}
+	//addJob(cleanArtHis(p.ID))
 	return err
 }
 
-func cleanArtHis(id uint) func() {
-	return func() {
-		ars := make([]ArtHis, 0)
-		db.Select("id", "a_id", "version").
-			Where("a_id = ?", id).
-			Order("version desc").
-			Limit(10).Find(&ars)
-		ids := make([]uint, len(ars))
-		for a, i := range ars {
-			ids[a] = i.ID
-		}
-		db.Not(ids).Delete(ArtHis{})
-	}
-}
+//func cleanArtHis(id uint) func() {
+//	return func() {
+//		ars := make([]ArtHis, 0)
+//		db.Select("id", "a_id", "version").
+//			Where("a_id = ?", id).
+//			Order("version desc").
+//			Limit(10).Find(&ars)
+//		ids := make([]uint, len(ars))
+//		for a, i := range ars {
+//			ids[a] = i.ID
+//		}
+//		db.Not(ids).Delete(ArtHis{})
+//	}
+//}
 
 func hasTag(id uint, name string) (bool, []uint) {
 	v, ok := tagsCache[name]
@@ -513,7 +514,7 @@ func dbInit() {
 	db.AutoMigrate(&System{})
 	db.AutoMigrate(&BlackList{})
 	db.AutoMigrate(&Art{})
-	db.AutoMigrate(&ArtHis{})
+	//db.AutoMigrate(&ArtHis{})
 	db.AutoMigrate(&Tag{})
 	db.AutoMigrate(&TagArt{})
 	db.AutoMigrate(&Res{})

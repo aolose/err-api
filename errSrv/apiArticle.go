@@ -130,9 +130,9 @@ func delArt(ctx *context.Context) {
 	}
 	if err == nil {
 		err = db.Delete(&Art{ID: id}).Error
-		if err == nil {
-			err = db.Where("a_id = ?", id).Delete(&ArtHis{}).Error
-		}
+		//if err == nil {
+		//	err = db.Where("a_id = ?", id).Delete(&ArtHis{}).Error
+		//}
 	}
 	if err == nil {
 		ctx.WriteString(strconv.Itoa(int(id)))
