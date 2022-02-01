@@ -161,6 +161,9 @@ func authHandler(next iris.Handler) func(ctx *context.Context) {
 			b, err := ctx.GetBody()
 			if err == nil {
 				s := string(b)
+				if s == "" {
+					s = ctx.GetCookie("session_id")
+				}
 				if len(s) > 10 {
 					if s[0] == '_' {
 						login(ctx, s)
