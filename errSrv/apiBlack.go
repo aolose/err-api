@@ -4,7 +4,11 @@ import (
 	"github.com/ip2location/ip2location-go/v9"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/context"
+	"io"
 	"math/rand"
+	"net/http"
+	"os"
+	"strconv"
 )
 
 var totalLogs int64
@@ -38,7 +42,50 @@ func getCity(ip string) string {
 	return ""
 }
 
+func downGeoDb() {
+	if sys.GeoToken == "" {
+		return
+	}
+	dbCode := "DB3LITEBINIPV6"
+	u := "https://www.ip2location.com/download" +
+		"/?token=" + sys.GeoToken + "&file=" + dbCode
+	var e error
+	fn := "db" + strconv.FormatInt(now(), 32) + ".bin"
+	wait(func() {
+		resp, err := http.Get(u)
+		e = err
+		if err != nil {
+			return
+		}
+		defer resp.Body.Close()
+		out, err := os.Create(fn)
+		if err != nil {
+			return
+		}
+		defer out.Close()
+		_, err = io.Copy(out, resp.Body)
+		return
+	})
+
+	if e == nil {
+		if geoDb != nil {
+			geoDb.Close()
+			geoDb = nil
+		}
+		err := os.Remove("geo.bin")
+		if err == nil {
+			err = os.Rename(fn, "geo.bin")
+		}
+		if err != nil {
+			geoDb, _ = ip2location.OpenDB(fn)
+		} else {
+			geoDb, _ = ip2location.OpenDB("geo.bin")
+		}
+	}
+}
+
 func initFirewall(app *iris.Application) {
+	addJob(downGeoDb)
 	syncFirewall()
 	syncTotal("access_logs", &totalLogs)
 	geoDb, _ = ip2location.OpenDB("geo.bin")

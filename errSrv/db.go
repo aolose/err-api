@@ -172,6 +172,7 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx *conte
 		case Comment:
 			res := make([]Comment, 0)
 			art := make([]Art, 0)
+			rp := make([]Reply, 0)
 			err = tx1.Find(&res).Error
 			if err == nil {
 				ids := make([]uint, len(res))
@@ -181,7 +182,26 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx *conte
 				err = db.Find(&art, ids).Error
 			}
 			if err == nil {
+				rpIds := make([]uint, 0)
+				for _, m := range res {
+					if m.ReplyCount > 0 {
+						rpIds = append(rpIds, m.ID)
+					}
+				}
+				err = db.Model(&Reply{}).Where("\"to\" in ?", rpIds).
+					Order("saved desc").Find(&rp).Error
+			}
+			if err == nil {
 				for n, r := range res {
+					if r.ReplyCount > 0 {
+						rs := make([]Reply, 0)
+						for _, a := range rp {
+							if a.To == r.ID {
+								rs = append(rs, a)
+							}
+						}
+						res[n].Replies = rs
+					}
 					res[n].From = r.IP
 					for _, a := range art {
 						if r.ArtID == a.ID {

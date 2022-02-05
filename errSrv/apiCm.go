@@ -19,16 +19,62 @@ func initCmApi(app *iris.Application) {
 	auth(cm.Get, "/{page}", pageQuery(Comment{}, &totalCm, "art_id", "%content%"))
 	auth(cm.Delete, "/", cmDel)
 	cm.Delete("/{id}", cmDel2)
+	auth(cm.Post, "/r", cmR)
+	auth(cm.Delete, "/r/{to}/{id}", cmRD)
 	auth(cm.Post, "/{id}", cmOpt)
 	sys.CmLife = 3600 * 24 * 2 // 2day
 	countCm()
 }
 
 type CMLs struct {
-	R     []Comment `json:"r"`
+	R     []Reply   `json:"r"`
 	C     []Comment `json:"ls"`
 	Cur   int       `json:"cur"`
 	Total int       `json:"total"`
+}
+
+func cmRD(c *context.Context) {
+	to, er := c.Params().GetUint("to")
+	cm := Comment{}
+	if er == nil {
+		er = db.First(&cm, to).Error
+	}
+	if er == nil && cm.ID > 0 {
+		id, err := c.Params().GetUint("id")
+		if err == nil && id > 0 {
+			rp := &Reply{}
+			db.First(rp, id)
+			if rp.ID > 0 {
+				err = db.Delete(&Reply{}, id).Error
+				db.Model(cm).Update("reply_count", cm.ReplyCount-1)
+			}
+			er = err
+		}
+	}
+
+	handleErr(c, er)
+}
+
+func cmR(c *context.Context) {
+	r := &Reply{}
+	cm := &Comment{}
+	err := c.ReadJSON(r)
+	if err == nil {
+		err = db.First(cm, r.To).Error
+	}
+	if err == nil && cm.ID > 0 {
+		if cm.ReplyCount < 0 {
+			cm.ReplyCount = 0
+		}
+		cm.ReplyCount++
+		r.Saved = now()
+		db.Save(cm)
+		err = db.Create(r).Error
+	}
+	if err == nil {
+		c.WriteString(strconv.FormatUint(uint64(r.ID), 10))
+	}
+	handleErr(c, err)
 }
 
 func cmLs(ctx *context.Context) {
@@ -49,31 +95,23 @@ func cmLs(ctx *context.Context) {
 		}
 
 		cm := make([]Comment, 0)
-		cr := make([]Comment, 0)
+		cr := make([]Reply, 0)
+		rpIds := make([]uint, 0)
 		t := int64(0)
 		db.Model(&Comment{}).Where("art_id=? AND status>?", id, 0).Count(&t)
 		db.Model(&Comment{}).Offset((page-1)*count).Limit(count).
 			Where("art_id=? AND status>?", id, 0).
-			Order("created desc").
+			Order("saved desc").
 			Find(&cm)
-		ci := make([]uint, 0)
-		cn := make([]uint, 0)
 		for _, c := range cm {
-			ci = append(ci, c.ID)
-		}
-		for _, c := range cm {
-			if c.Reply > 0 {
-				for _, i := range ci {
-					if i == c.Reply {
-						break
-					}
-				}
-				cn = append(cn, c.Reply)
+			if c.ReplyCount > 0 {
+				rpIds = append(rpIds, c.ID)
 			}
 		}
-		if len(cn) > 0 {
-			db.Where("reply IN ?", cn).Find(&cr)
+		if len(rpIds) > 0 {
+			db.Model(&Reply{}).Where("\"to\" in ?", rpIds).Find(&cr)
 		}
+
 		ck := ctx.GetCookie("cm_tk")
 		if ck != "" {
 			n := now() - sys.CmLife
@@ -196,6 +234,7 @@ func cmDel2(ctx *context.Context) {
 	id, err := ctx.Params().GetUint("id")
 	if err == nil && id > 0 && ck != "" {
 		err = db.Delete(&Comment{}, id).Error
+		db.Where("\"to\" = ?", id).Delete(&Reply{})
 	}
 	handleErr(ctx, err)
 }
@@ -206,6 +245,7 @@ func cmDel(ctx *context.Context) {
 	} else {
 		ids := strings.Split(id, ",")
 		err := db.Delete(&Comment{}, "ID in ?", ids).Error
+		db.Where("\"to\" in ?", ids).Delete(&Reply{})
 		handleErr(ctx, err)
 		countCm()
 		ctx.StatusCode(200)

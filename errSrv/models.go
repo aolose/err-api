@@ -178,6 +178,7 @@ type System struct {
 	TotalPubPosts int    `gorm:"-" json:"-"`
 	TotalPosts    int    `gorm:"-" json:"-"`
 	TotalRes      int    `gorm:"-" json:"-"`
+	GeoToken      string `json:"geo-tk"`
 }
 
 type Res struct {
@@ -204,21 +205,30 @@ type ArtInf struct {
 	Title string `json:"t"`
 	Date  int64  `json:"d"`
 }
-type Comment struct {
+
+type Reply struct {
 	ID      uint   `gorm:"primarykey" json:"i"`
-	Inf     ArtInf `gorm:"-" json:"x"`
-	Avatar  int    `json:"a"`
-	Name    string `json:"n"`
-	ArtID   uint   `json:"d"`
-	Reply   uint   `json:"r"`
+	To      uint   `json:"t"`
+	Saved   int64  `json:"z"`
 	Content string `json:"c"`
-	Link    string `json:"l"`
-	Status  int    `json:"s"`
-	Token   string `json:"-"`
-	Saved   int64  `json:"t"`
-	Own     int    `json:"o" gorm:"-"`
-	IP      string `json:"-"`
-	From    string `json:"f"`
+}
+
+type Comment struct {
+	ID         uint    `gorm:"primarykey" json:"i"`
+	Inf        ArtInf  `gorm:"-" json:"x"`
+	Avatar     int     `json:"a"`
+	Name       string  `json:"n"`
+	ArtID      uint    `json:"d"`
+	ReplyCount int     `json:"-"`
+	Replies    []Reply `gorm:"-" json:"r"`
+	Content    string  `json:"c"`
+	Link       string  `json:"l"`
+	Status     int     `json:"s"`
+	Token      string  `json:"-"`
+	Saved      int64   `json:"t"`
+	Own        int     `json:"o" gorm:"-"`
+	IP         string  `json:"-"`
+	From       string  `json:"f"`
 }
 
 type PubLisArt struct {
@@ -521,6 +531,7 @@ func dbInit() {
 	db.AutoMigrate(&Notice{})
 	db.AutoMigrate(&Author{})
 	db.AutoMigrate(&Comment{})
+	db.AutoMigrate(&Reply{})
 	db.AutoMigrate(&Guest{})
 	db.AutoMigrate(&AccessLog{})
 	db.AutoMigrate(&FirewallRule{})

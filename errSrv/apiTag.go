@@ -48,7 +48,7 @@ func getTagArt(ctx *context.Context) {
 		p := make([]PubLisArt, 0)
 		if ids, ok := tagsCache[name]; ok {
 			db.Model(&Art{}).Offset((page-1)*count).
-				Limit(count).Where("arts.updated != ? and arts.id in ?", 0, ids).
+				Limit(count).Where("updated != ? and id in ?", 0, ids).
 				Order("created desc, updated desc").
 				Find(&p)
 			for i, a := range p {
