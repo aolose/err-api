@@ -202,7 +202,7 @@ func pageQuery(table interface{}, total *int64, field ...string) func(ctx *conte
 						}
 						res[n].Replies = rs
 					}
-					res[n].From = r.IP
+					res[n].From = r.IP+" "+getCity(r.IP)
 					for _, a := range art {
 						if r.ArtID == a.ID {
 							res[n].Inf = ArtInf{
