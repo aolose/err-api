@@ -233,7 +233,7 @@ func cmDel2(ctx *context.Context) {
 	ck := ctx.GetCookie("cm_tk")
 	id, err := ctx.Params().GetUint("id")
 	if err == nil && id > 0 && ck != "" {
-		err = db.Delete(&Comment{}, id).Error
+		err = db.Where("id = ? and token = ?", id, ck).Delete(&Comment{}).Error
 		db.Where("\"to\" = ?", id).Delete(&Reply{})
 	}
 	handleErr(ctx, err)
